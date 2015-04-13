@@ -13,16 +13,11 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Kinect;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using Microsoft.Kinect;
+
 
 namespace BodyHeight
 {
@@ -36,7 +31,7 @@ namespace BodyHeight
             InitializeComponent();
         }
 
-        public static double Height(this Body skeleton)
+        public static double Height(Body skeleton)
         {
             const double HEAD_DIVERGENCE = 0.1;
 
