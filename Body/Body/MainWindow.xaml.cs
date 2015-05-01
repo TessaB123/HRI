@@ -26,12 +26,30 @@ namespace BodyHeight
     /// </summary>
     public partial class MainWindow : Window
     {
+        private KinectSensor kinectSensor = null;
+        private int displayWidth;
+        private int displayHeight;
+        private BodyFrameReader bodyFrameReader = null;
+        private DrawingGroup drawingGroup;
+        private DrawingImage imageSource;
+
         public MainWindow()
         {
+            this.kinectSensor = KinectSensor.GetDefault();
+            FrameDescription frameDescription = this.kinectSensor.DepthFrameSource.FrameDescription;
+            this.displayWidth = frameDescription.Width;
+            this.displayHeight = frameDescription.Height;
+            this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
+            //this.kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
+            this.kinectSensor.Open();
+            this.drawingGroup = new DrawingGroup();
+            this.imageSource = new DrawingImage(this.drawingGroup);
+            this.DataContext = this;
             InitializeComponent();
+            
         }
 
-        public static double Height(Body skeleton)
+        public double Height(this Body skeleton) 
         {
             const double HEAD_DIVERGENCE = 0.1;
 
@@ -119,6 +137,11 @@ namespace BodyHeight
                 }
             }
         }
-       
+       //private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
+       // {
+       //     this.StatusText = this.kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+       //                                          : Properties.Resources.SensorNotAvailableStatusText;
+
+       // }
     }
 }
