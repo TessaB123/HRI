@@ -50,7 +50,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Kinect">
-        <HintPath>$(KINECTSDK20_DIR)Assemblies\Microsoft.Kinect.dll</HintPath>
+      <HintPath>$(KINECTSDK20_DIR)Assemblies\Microsoft.Kinect.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -83,8 +83,60 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <XamlAppDef Include="pitchtracker\BuildProcessTemplates\DefaultTemplate.11.1.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </XamlAppDef>
+    <XamlAppDef Include="pitchtracker\BuildProcessTemplates\LabDefaultTemplate.11.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </XamlAppDef>
+    <XamlAppDef Include="pitchtracker\BuildProcessTemplates\UpgradeTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </XamlAppDef>
+    <Page Include="pitchtracker\PitchTracker\App.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="pitchtracker\PitchTracker\MainWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="pitchtracker\PitchTracker\App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\obj\x86\Debug\App.g.i.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\obj\x86\Debug\MainWindow.g.i.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\Pitch\CircularBuffer.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\Pitch\Extensions.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\Pitch\IIRFilter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\Pitch\PitchDsp.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\Pitch\PitchTracker.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\PitchTracker\Properties\AssemblyInfo.cs" />
+    <Compile Include="pitchtracker\PitchTracker\Properties\Resources.Designer.cs" />
+    <Compile Include="pitchtracker\PitchTracker\Properties\Settings.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -98,11 +150,15 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <EmbeddedResource Include="pitchtracker\PitchTracker\Properties\Resources.resx" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <None Include="pitchtracker\PitchTracker\obj\x86\Debug\DesignTimeResolveAssemblyReferencesInput.cache" />
+    <None Include="pitchtracker\PitchTracker\obj\x86\Debug\PitchTracker_MarkupCompile.i.cache" />
+    <None Include="pitchtracker\PitchTracker\Properties\Settings.settings" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -116,6 +172,16 @@
     <Resource Include="Images\Kinect.ico" />
     <Resource Include="Images\Logo.png" />
     <Resource Include="Images\Status.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="pitchtracker\PitchTracker\bin\Debug\" />
+    <Folder Include="pitchtracker\PitchTracker\obj\x86\Debug\TempPE\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="pitchtracker\PitchTracker\PitchTracker.csproj" />
+    <Content Include="pitchtracker\PitchTracker\PitchTracker.csproj.vspscc" />
+    <Content Include="pitchtracker\PitchTracker\PitchTracker.sln" />
+    <Content Include="pitchtracker\PitchTracker\PitchTracker.vssscc" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

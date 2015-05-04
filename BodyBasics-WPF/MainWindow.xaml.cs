@@ -25,12 +25,13 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     using System.Windows.Input;
     using System.Windows.Navigation;
     using System.Windows.Shapes;
-    
+    using Pitch.PitchTracker;
     /// <summary>
     /// Interaction logic for MainWindow
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        PitchTracker ptt = new Pitch.PitchTracker();
         /// <summary>
         /// Radius of drawn hand circles
         /// </summary>
@@ -211,6 +212,9 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
             // open the sensor
             this.kinectSensor.Open();
+            IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
+            System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
+            
 
             // set the status text
             this.StatusText = this.kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
