@@ -136,6 +136,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         /// </summary>
         private string statusText = null;
 
+        private Stream kinect32BitStream;
+
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
@@ -225,6 +227,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
             // initialize the components (controls) of the window
             this.InitializeComponent();
+
+            //this.kinect32BitStream = input;
         }
 
         /// <summary>
@@ -362,16 +366,11 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
                                 DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
                                 jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
-                                string testString = "";
-                                // ToString(Math.Round(Height(body), 2));
-                                testString = Math.Round(Height(body), 2).ToString(); //string.Format("", body.TrackingId, );
-                                FormattedText formattedText = new FormattedText(testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 32, Brushes.Beige);
-                                dc.DrawText(formattedText, new Point(10, 10));
-          
+                               
                             }
-
+                            this.DrawOutputMeasures(joints, jointPoints, dc, drawPen, Height(body));
                             this.DrawBody(joints, jointPoints, dc, drawPen);
-
+                            //joints[JointType.Neck].Position.
                             this.DrawHand(body.HandLeftState, jointPoints[JointType.HandLeft], dc);
                             this.DrawHand(body.HandRightState, jointPoints[JointType.HandRight], dc);
                         }
@@ -383,7 +382,40 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                 }
             }
         }
+        private void DrawOutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen,double[] body)
+        {
+            string testString = "";
+            double bodyLength = (body[0]);
+            // ToString(Math.Round(Height(body), 2));
+            testString = Math.Round(bodyLength, 2).ToString(); //string.Format("", body.TrackingId, );
+            FormattedText formattedText = new FormattedText("lengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
+            Point textLoc = new Point(jointPoints[JointType.Head].X + 100, jointPoints[JointType.Head].Y);
+            drawingContext.DrawText(formattedText, textLoc);
 
+            double legLength = (body[1]);
+            testString = Math.Round(legLength, 2).ToString(); //string.Format("", body.TrackingId, );
+            FormattedText formattedTextLeg = new FormattedText("beenlengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
+            Point textLocLeg = new Point(jointPoints[JointType.KneeLeft].X + 100, jointPoints[JointType.KneeLeft].Y);
+            drawingContext.DrawText(formattedTextLeg, textLocLeg);
+
+            double armLength = (body[2]);
+            testString = Math.Round(armLength, 2).ToString(); //string.Format("", body.TrackingId, );
+            FormattedText formattedTextArm = new FormattedText("armlengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
+            Point textLocArm = new Point(jointPoints[JointType.ElbowLeft].X + 100, jointPoints[JointType.ElbowLeft].Y);
+            drawingContext.DrawText(formattedTextArm, textLocArm);
+
+            double shoulderWidth = (body[3]);
+            testString = Math.Round(shoulderWidth, 2).ToString(); //string.Format("", body.TrackingId, );
+            FormattedText formattedTextShoulder = new FormattedText("schouderbreedte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
+            Point textLocShoulder = new Point(jointPoints[JointType.ShoulderLeft].X + 100, jointPoints[JointType.ShoulderLeft].Y);
+            drawingContext.DrawText(formattedTextShoulder, textLocShoulder);
+
+            double torso = (body[4]);
+            testString = Math.Round(torso, 2).ToString(); //string.Format("", body.TrackingId, );
+            FormattedText formattedTextTorso = new FormattedText("torso: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
+            Point textLocTorso = new Point(jointPoints[JointType.SpineMid].X + 100, jointPoints[JointType.SpineMid].Y);
+            drawingContext.DrawText(formattedTextTorso, textLocTorso);
+        }
         /// <summary>
         /// Draws a body
         /// </summary>
@@ -531,7 +563,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                                                             : Properties.Resources.SensorNotAvailableStatusText;
         }
 
-        public static double Height(Body skeleton)
+        public static double[] Height(Body skeleton)
         {
             const double HEAD_DIVERGENCE = 0.1;
 
@@ -547,6 +579,17 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             var ankleRight = skeleton.Joints[JointType.AnkleRight];
             var footLeft = skeleton.Joints[JointType.FootLeft];
             var footRight = skeleton.Joints[JointType.FootRight];
+            var shoulderLeft = skeleton.Joints[JointType.ShoulderLeft];
+            var shoulderRight = skeleton.Joints[JointType.ShoulderRight];
+            var elbowLeft = skeleton.Joints[JointType.ElbowLeft];
+            var elbowRight = skeleton.Joints[JointType.ElbowRight];
+            var wristLeft = skeleton.Joints[JointType.WristLeft];
+            var wristRight = skeleton.Joints[JointType.WristRight];
+            var handLeft = skeleton.Joints[JointType.HandLeft];
+            var handRight = skeleton.Joints[JointType.HandRight];
+            var handTipLeft = skeleton.Joints[JointType.HandTipLeft];
+            var handTipRight = skeleton.Joints[JointType.HandTipRight];
+            
 
 
             // Find which leg is tracked more accurately.
@@ -554,14 +597,23 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             NumberOfTrackedJoints(hipLeft, kneeLeft, ankleLeft, footLeft);
             int legRightTrackedJoints =
             NumberOfTrackedJoints(hipRight, kneeRight, ankleRight, footRight);
-
+            int armLeftTrackedJoints = NumberOfTrackedJoints(shoulderLeft, elbowLeft, wristLeft, handLeft, handTipLeft);
+            int armRightTrackedJoints = NumberOfTrackedJoints(shoulderRight, elbowRight, wristRight, handRight, handTipRight);
+            
+            double shoulderWidth = Length(shoulderLeft, neck, shoulderRight);
+            double torso = Length(neck, spine, waist);
 
             double legLength = legLeftTrackedJoints > legRightTrackedJoints ?
               Length(hipLeft, kneeLeft, ankleLeft,
               footLeft) : Length(hipRight, kneeRight, ankleRight, footRight);
 
+            double armLength = armLeftTrackedJoints > armRightTrackedJoints ?
+                Length(shoulderLeft, elbowLeft, wristLeft, handLeft, handTipLeft) 
+                : Length(shoulderRight, elbowRight, wristRight, handRight, handTipRight);
 
-            return Length(head, neck, spine, waist) + legLength + HEAD_DIVERGENCE;
+            double[] buh = { Length(head, neck, spine, waist) + legLength + HEAD_DIVERGENCE, legLength, armLength, shoulderWidth, torso};
+
+            return buh;
         }
 
         public static int NumberOfTrackedJoints(params Joint[] joints)
@@ -614,10 +666,187 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
                     if (skeleton != null)
                     {
-                        double height = Height(skeleton);
+                        double height = Height(skeleton)[0];
                     }
                 }
             }
         }
     }
+
+    /// <summary>
+    /// Wrapper Stream Class to Support 32->16bit conversion and support Speech call to Seek
+    /// </summary>
+    internal class KinectAudioStream : Stream
+    {
+        /// <summary>
+        /// Holds the kinect audio stream, in 32-bit IEEE float format
+        /// </summary>
+        private Stream kinect32BitStream;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KinectAudioStream" /> class.
+        /// </summary>
+        /// <param name="input">Kinect audio stream</param>
+        public KinectAudioStream(Stream input)
+        {
+            this.kinect32BitStream = input;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether speech recognition is active
+        /// </summary>
+        public bool SpeechActive { get; set; }
+
+        /// <summary>
+        /// CanRead property
+        /// </summary>
+        public override bool CanRead
+        {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// CanWrite property
+        /// </summary>
+        public override bool CanWrite
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// CanSeek property
+        /// </summary>
+        public override bool CanSeek
+        {
+            // Speech does not call - but set value correctly
+            get { return false; }
+        }
+
+        /// <summary>
+        /// Position Property
+        /// </summary>
+        public override long Position
+        {
+            // Speech gets the position
+            get { return 0; }
+            set { throw new NotImplementedException(); }
+        }
+
+        /// <summary>
+        /// Gets the length of the stream. Not implemented.
+        /// </summary>
+        public override long Length
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /// <summary>
+        /// Flush the stream. Not implemented.
+        /// </summary>
+        public override void Flush()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Stream Seek. Not implemented and always returns 0.
+        /// </summary>
+        /// <param name="offset">A byte offset relative to the origin parameter</param>
+        /// <param name="origin">A value of type SeekOrigin indicating the reference point used to obtain the new position</param>
+        /// <returns>Always returns 0</returns>
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            // Even though CanSeek == false, Speech still calls seek. Return 0 to make Speech happy instead of NotImplementedException()
+            return 0;
+        }
+
+        /// <summary>
+        /// Set the length of the stream. Not implemented.
+        /// </summary>
+        /// <param name="value">Length of the stream</param>
+        public override void SetLength(long value)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Write into the stream. Not implemented.
+        /// </summary>
+        /// <param name="buffer">Buffer to write</param>
+        /// <param name="offset">Offset into the buffer</param>
+        /// <param name="count">Number of bytes to write</param>
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Read from the stream and convert from 32 bit IEEE float to 16 bit signed integer
+        /// </summary>
+        /// <param name="buffer">Input buffer</param>
+        /// <param name="offset">Offset into buffer</param>
+        /// <param name="count">Number of bytes to read</param>
+        /// <returns>bytes read</returns>
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            // Kinect gives 32-bit float samples. Speech asks for 16-bit integer samples.
+            const int SampleSizeRatio = sizeof(float) / sizeof(short); // = 2. 
+
+            // Speech reads at high frequency - allow some wait period between reads (in msec)
+            const int SleepDuration = 50;
+
+            // Allocate buffer for receiving 32-bit float from Kinect
+            int readcount = count * SampleSizeRatio;
+            byte[] kinectBuffer = new byte[readcount];
+
+            int bytesremaining = readcount;
+
+            // Speech expects all requested bytes to be returned
+            while (bytesremaining > 0)
+            {
+                // If we are no longer processing speech commands, exit
+                if (!this.SpeechActive)
+                {
+                    return 0;
+                }
+
+                int result = this.kinect32BitStream.Read(kinectBuffer, readcount - bytesremaining, bytesremaining);
+                bytesremaining -= result;
+
+                // Speech will read faster than realtime - wait for more data to arrive
+                if (bytesremaining > 0)
+                {
+                    System.Threading.Thread.Sleep(SleepDuration);
+                }
+            }
+
+            // Convert each float audio sample to short
+            for (int i = 0; i < count / sizeof(short); i++)
+            {
+                // Extract a single 32-bit IEEE value from the byte array
+                float sample = BitConverter.ToSingle(kinectBuffer, i * sizeof(float));
+
+                // Make sure it is in the range [-1, +1]
+                if (sample > 1.0f)
+                {
+                    sample = 1.0f;
+                }
+                else if (sample < -1.0f)
+                {
+                    sample = -1.0f;
+                }
+
+                // Scale float to the range (short.MinValue, short.MaxValue] and then 
+                // convert to 16-bit signed with proper rounding
+                short convertedSample = Convert.ToInt16(sample * short.MaxValue);
+
+                // Place the resulting 16-bit sample in the output byte array
+                byte[] local = BitConverter.GetBytes(convertedSample);
+                System.Buffer.BlockCopy(local, 0, buffer, offset + (i * sizeof(short)), sizeof(short));
+            }
+
+            return count;
+        }
+    }
+
 }
