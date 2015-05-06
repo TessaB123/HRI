@@ -19,7 +19,7 @@
 
     <Image Grid.Row="0" Source="Images\Logo.png" HorizontalAlignment="Left" Stretch="Fill" Height="32" Width="81" Margin="0 10 0 5" />
     <TextBlock Grid.Row="0" Margin="0 0 -1 0" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Body Basics</TextBlock>
-    <Image Grid.Row="0" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5" />
+    <Image Grid.Row="0" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="506,5,116,0" />
 
     <Viewbox Grid.Row="1" HorizontalAlignment="Center">
       <Image Source="{Binding ImageSource}" Stretch="UniformToFill" />
@@ -28,5 +28,7 @@
     <StatusBar Grid.Row="2" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}">
       <StatusBarItem Content="{Binding StatusText}" />
     </StatusBar>
-  </Grid>
+        <TextBox x:Name="inputText" HorizontalAlignment="Left" Height="23" Margin="306,14,0,0" TextWrapping="Wrap" Text="Name?" VerticalAlignment="Top" Width="120" TouchEnter="TextBox_TouchEnter_1"/>
+        <Button x:Name="retrieveInput" Content="done" HorizontalAlignment="Left" Margin="431,17,0,0" VerticalAlignment="Top" Width="33" Click="retrieveInput_Click"/>
+    </Grid>
 </Window>

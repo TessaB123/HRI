@@ -25,6 +25,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     using System.Windows.Input;
     using System.Windows.Navigation;
     using System.Windows.Shapes;
+    using Microsoft.VisualBasic;
+    using Microsoft.VisualBasic.FileIO;
   //  using Pitch.PitchTracker;
     /// <summary>
     /// Interaction logic for MainWindow
@@ -354,6 +356,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                    // tblHeights.Text = string.Empty;
                     foreach (Body body in this.bodies)
                     {
+                        
                         Pen drawPen = this.bodyColors[penIndex++];
 
                         if (body.IsTracked)
@@ -379,7 +382,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                                 jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
                                
                             }
-                            this.DrawOutputMeasures(joints, jointPoints, dc, drawPen, Height(body));
+                            this.DrawOutputMeasures(joints, jointPoints, dc, drawPen, Height(body),body);
                             this.DrawBody(joints, jointPoints, dc, drawPen);
                             //joints[JointType.Neck].Position.
                             this.DrawHand(body.HandLeftState, jointPoints[JointType.HandLeft], dc);
@@ -394,96 +397,227 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             }
         }
 
-        private void DrawOutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen,double[] body)
+        private void DrawOutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen,double[] bodym, Body body )
         {   
             string testString = "";
-            double bodyLength = (body[0]);
+            double bodyLength = (bodym[0]);
+           
+           
             // ToString(Math.Round(Height(body), 2));
             testString = Math.Round(bodyLength, 2).ToString(); //string.Format("", body.TrackingId, );
             FormattedText formattedText = new FormattedText("lengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
             Point textLoc = new Point(jointPoints[JointType.Head].X + 100, jointPoints[JointType.Head].Y);
             drawingContext.DrawText(formattedText, textLoc);
 
-            double legLength = (body[1]);
+            double legLength = (bodym[1]);
             testString = Math.Round(legLength, 2).ToString(); //string.Format("", body.TrackingId, );
             FormattedText formattedTextLeg = new FormattedText("beenlengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
             Point textLocLeg = new Point(jointPoints[JointType.KneeLeft].X + 100, jointPoints[JointType.KneeLeft].Y);
             drawingContext.DrawText(formattedTextLeg, textLocLeg);
 
-            double armLength = (body[2]);
+            double armLength = (bodym[2]);
             testString = Math.Round(armLength, 2).ToString(); //string.Format("", body.TrackingId, );
             FormattedText formattedTextArm = new FormattedText("armlengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
             Point textLocArm = new Point(jointPoints[JointType.ElbowLeft].X + 100, jointPoints[JointType.ElbowLeft].Y);
             drawingContext.DrawText(formattedTextArm, textLocArm);
 
-            double shoulderWidth = (body[3]);
+            double shoulderWidth = (bodym[3]);
             testString = Math.Round(shoulderWidth, 2).ToString(); //string.Format("", body.TrackingId, );
             FormattedText formattedTextShoulder = new FormattedText("schouderbreedte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
             Point textLocShoulder = new Point(jointPoints[JointType.ShoulderLeft].X + 100, jointPoints[JointType.ShoulderLeft].Y);
             drawingContext.DrawText(formattedTextShoulder, textLocShoulder);
 
-            double torso = (body[4]);
+            double torso = (bodym[4]);
             testString = Math.Round(torso, 2).ToString(); //string.Format("", body.TrackingId, );
             FormattedText formattedTextTorso = new FormattedText("torso: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
             Point textLocTorso = new Point(jointPoints[JointType.SpineMid].X + 100, jointPoints[JointType.SpineMid].Y);
             drawingContext.DrawText(formattedTextTorso, textLocTorso);
 
+          
+            
+            FormattedText formattedTextbodyid = new FormattedText("ID: " + body.TrackingId, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
+            Point textLocbodyid = new Point(jointPoints[JointType.Head].X , jointPoints[JointType.Head].Y-10);
+            drawingContext.DrawText(formattedTextbodyid, textLocbodyid);
+
+            bool recognised = false;
+            Double counter = 0;
             bool empty = true;
-            for (int i = 0; i < body.Length; i++)
+            List<List<string>> data = new List<List<string>>();
+            List<string> values = new List<string>();
+            string[][] output = new string[][] { new string[] { "" } };
+            for (int i = 0; i < bodym.Length; i++)
             {
-                if (body[i] == 0)
+                if (bodym[i] == 0)
                 {
                     empty = false;
                 }
             }
             if (empty)
             {
-                string path = @"CSV.csv";
+                string path = @"unknownPeople.csv";
+                string path2 = @"knownPeople.csv";
+              
                 string delimiter = ";";
-                if (File.ReadAllText(path) == null)
-                {
-                    Double counter = 0;
-                }
-                else
-                {
-                    string text=File.ReadAllText(path);
-                    List<List<Double>> data = new List<List<Double>>();
-                    List<Double> values = new List<Double>();
-                    for (int i=text.Length-1; i>=0; i--)
+                    if (File.Exists(path) && counter<101)
                     {
-                        if(text[i]=='\n')
+                        string text = File.ReadAllText(path);
+                        text.Replace("\r", "");
+                        int l = text.Length;
+                        for (int i = l- 1; i >= 0; i--)
                         {
-                            data.Add(values);
-                            values = new List<Double>();
+                            
+                            if (text[i] == ';')
+                            {
+                                String a=text.Substring(i + 1);
+                                values.Add(a);
+                                text = text.Remove(i + 1); 
+                                
+                                text=text.Remove(i);
+                            }
+                           else if (text[i] == '\n'&& counter!=0)
+                            {
+
+                                String d = text.Substring(i+1);
+                                values.Add(d);
+                                text = text.Remove(i + 1);
+                                text = text.Remove(i);
+                            }
                         }
 
-                        if (text[i] == ';')
+                       
+                        data.Add(values);
+                        values = new List<string>();
+                      
+                        counter = Convert.ToDouble(data[0][0])+1;
+                        Console.Write(counter);
+                    }
+                    else
+                    {
+                        Console.Write("counter =0");
+                        counter = 0;
+                    }
+                    if (counter == 0.0)
+                    {
+                        output = new string[][] { new string[] {""+ body.TrackingId, bodyLength.ToString(), legLength.ToString(), armLength.ToString(), shoulderWidth.ToString(), torso.ToString(), counter.ToString() } };
+                        int length2 = output.GetLength(0);
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < length2; i++)
                         {
-                            values.Add(Convert.ToDouble(text.Remove(i+1)));
-                            text.Remove(i);
-                        }                    
-                   }
-                   Double counter=Convert.ToDouble(data[0][0]);
-                }
-                string[][] output = new string[][]{new string[]{"Jasper",bodyLength.ToString(),legLength.ToString(),armLength.ToString(),shoulderWidth.ToString(), torso.ToString(), counter}};
-                int length2 = output.GetLength(0);
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < length2; i++)
+                            sb.AppendLine(string.Join(delimiter, output[i]));
+                        }
+                        File.WriteAllText(path, sb.ToString());
+                    }
+                    else
+                    {
+
+                        output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso) / counter).ToString(), counter.ToString() } };
+                    }
+                    if (counter > 100)
+                    {
+                        counter = 0;
+                        string name = recognise(output,path2);
+                        if (name != "")
+                        { recognised = true; }
+                        if (!recognised)
+                        {   
+                            //name = InputName();
+                            name = body.TrackingId + "";
+                            output = new string[][] { new string[] { name, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso) / counter).ToString(), counter.ToString() } };
+                            int length = output.GetLength(0);
+                            StringBuilder sb2 = new StringBuilder();
+                            for (int i = 0; i < length; i++)
+                            {
+                                sb2.AppendLine(string.Join(delimiter, output[i]));
+                            }
+                            if (File.Exists(path2))
+                            { File.WriteAllText(path2, File.ReadAllText(path2) + sb2.ToString()); }
+                            else
+                            { File.WriteAllText(path2, sb2.ToString()); }
+
+                            
+                        }
+                        else
+                        {
+                            
+                            output = new string[][] { new string[] { name, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso) / counter).ToString(), counter.ToString() } };
+                     
+                        }
+
+                    }
+                if(!recognised)
                 {
-                    sb.AppendLine(string.Join(delimiter, output[i]));
+                        int length = output.GetLength(0);
+                        StringBuilder sb2 = new StringBuilder();
+                        for (int i = 0; i < length; i++)
+                        {
+                            sb2.AppendLine(string.Join(delimiter, output[i]));
+                        }
+                     
+                            if (File.Exists(path))
+                            {
+                                File.WriteAllText(path, File.ReadAllText(path) + sb2.ToString());
+
+                            }
+                            else { File.WriteAllText(path,  File.ReadAllText(path) + sb2.ToString()); }
+                        
+                        if (File.Exists(path))
+                        {
+                            File.WriteAllText(path, sb2.ToString());
+
+                        }
+                        else { File.WriteAllText(path, sb2.ToString()); }
                 }
-                
-                
-                File.WriteAllText(path, File.ReadAllText(path) + sb.ToString());
-
-
-
-
+                    }
                
                  
-            }
+            
             
         }
+
+
+        private string recognise(string[][] output, string path)
+        {
+
+            double distance = 999999999999999999999999999999999999999999.0;
+            string name = "";
+            double smallestDist = 999999999999999999999.0;
+            double sum = 0;
+            
+
+
+
+            using (TextFieldParser parser = new TextFieldParser(path))
+            {
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(";");
+                while (!parser.EndOfData)
+                {
+                    //Processing row
+                    string[] fields = parser.ReadFields();
+                    for (int i = 1; i < fields.Length; i++)
+                    {
+                        sum+=Math.Pow((Convert.ToDouble(fields[i])-Convert.ToDouble(output[0][i])),2);
+                    }
+                    distance=Math.Sqrt(sum);
+                       
+                            if (smallestDist > distance)
+                            {
+                                smallestDist = distance;
+                                name = fields[0];
+                            }
+                        }
+                if (smallestDist<1)
+                {return name;}
+                else {return "";}
+                    }
+                }
+
+
+        private string InputName()
+        {
+            return "";
+        }
+
         /// <summary>
         /// Draws a body
         /// </summary>
@@ -739,6 +873,22 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                 }
             }
         }
+
+       
+
+        private void TextBox_TouchEnter_1(object sender, TouchEventArgs e)
+        {
+               
+        }
+
+        private void retrieveInput_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(this.inputText.Text);
+        }
+
+        
+
+        
     }
 
     /// <summary>
@@ -916,5 +1066,6 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             return count;
         }
     }
+
 
 }
