@@ -25,13 +25,13 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     using System.Windows.Input;
     using System.Windows.Navigation;
     using System.Windows.Shapes;
-    using Pitch.PitchTracker;
+  //  using Pitch.PitchTracker;
     /// <summary>
     /// Interaction logic for MainWindow
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
-        PitchTracker ptt = new Pitch.PitchTracker();
+        //PitchTracker ptt = new Pitch.PitchTracker();
         /// <summary>
         /// Radius of drawn hand circles
         /// </summary>
@@ -214,8 +214,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             this.kinectSensor.Open();
             IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
             System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
-            
 
+            
             // set the status text
             this.StatusText = this.kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
                                                             : Properties.Resources.NoSensorStatusText;
@@ -317,6 +317,13 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         /// <param name="e">event arguments</param>
         private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
+          
+
+            // csv writer
+            //var csvw = new StreamWriter("CSV.csv");
+            // csv reader
+            // var csv = new StreamReader("CSV.csv");
+
             bool dataReceived = false;
 
             using (BodyFrame bodyFrame = e.FrameReference.AcquireFrame())
@@ -386,8 +393,9 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                 }
             }
         }
+
         private void DrawOutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen,double[] body)
-        {
+        {   
             string testString = "";
             double bodyLength = (body[0]);
             // ToString(Math.Round(Height(body), 2));
@@ -419,6 +427,62 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             FormattedText formattedTextTorso = new FormattedText("torso: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
             Point textLocTorso = new Point(jointPoints[JointType.SpineMid].X + 100, jointPoints[JointType.SpineMid].Y);
             drawingContext.DrawText(formattedTextTorso, textLocTorso);
+
+            bool empty = true;
+            for (int i = 0; i < body.Length; i++)
+            {
+                if (body[i] == 0)
+                {
+                    empty = false;
+                }
+            }
+            if (empty)
+            {
+                string path = @"CSV.csv";
+                string delimiter = ";";
+                if (File.ReadAllText(path) == null)
+                {
+                    Double counter = 0;
+                }
+                else
+                {
+                    string text=File.ReadAllText(path);
+                    List<List<Double>> data = new List<List<Double>>();
+                    List<Double> values = new List<Double>();
+                    for (int i=text.Length-1; i>=0; i--)
+                    {
+                        if(text[i]=='\n')
+                        {
+                            data.Add(values);
+                            values = new List<Double>();
+                        }
+
+                        if (text[i] == ';')
+                        {
+                            values.Add(Convert.ToDouble(text.Remove(i+1)));
+                            text.Remove(i);
+                        }                    
+                   }
+                   Double counter=Convert.ToDouble(data[0][0]);
+                }
+                string[][] output = new string[][]{new string[]{"Jasper",bodyLength.ToString(),legLength.ToString(),armLength.ToString(),shoulderWidth.ToString(), torso.ToString(), counter}};
+                int length2 = output.GetLength(0);
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < length2; i++)
+                {
+                    sb.AppendLine(string.Join(delimiter, output[i]));
+                }
+                
+                
+                File.WriteAllText(path, File.ReadAllText(path) + sb.ToString());
+
+
+
+
+               
+                 
+            }
+            
         }
         /// <summary>
         /// Draws a body
