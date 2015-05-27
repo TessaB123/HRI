@@ -3,6 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //------------------------------------------------------------------------------
+//https://msdn.microsoft.com/en-us/library/system.io.ports.serialport%28v=vs.110%29.aspx
 
 namespace Microsoft.Samples.Kinect.BodyBasics
 {
@@ -12,6 +13,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Net;
+    using System.Net.Sockets;
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
@@ -27,13 +30,12 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     using System.Windows.Shapes;
     using Microsoft.VisualBasic;
     using Microsoft.VisualBasic.FileIO;
-  //  using Pitch.PitchTracker;
+
     /// <summary>
     /// Interaction logic for MainWindow
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
-        //PitchTracker ptt = new Pitch.PitchTracker();
         /// <summary>
         /// Radius of drawn hand circles
         /// </summary>
@@ -140,12 +142,33 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         private string statusText = null;
 
         private Stream kinect32BitStream;
+        private Pitch.PitchTracker pitchTracker;
+        private readonly byte[] audioBuffer = null;
+        private readonly float[] floatArray = null;
+        private byte[] packetData;
+        string IP;
+        int port;
+        private  IPEndPoint ep;
+        Socket client;
+        /*
+         *              this.pitchTracker.ProcessBuffer(this.floatArray);
 
+                        Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
+                        Console.WriteLine("     Hoi");
+         */
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
         public MainWindow()
         {
+            //initialyse socket
+            this.IP= "127.0.0.1";
+            this.port= 80;
+            this.ep =new IPEndPoint(IPAddress.Parse(this.IP), port);
+            this.client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            //client.sentTo(pakcetData, ep)
+            // client.timeout(1)
+
             // one sensor is currently supported
             this.kinectSensor = KinectSensor.GetDefault();
 
@@ -233,7 +256,17 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
             // initialize the components (controls) of the window
             this.InitializeComponent();
+            
+            // set pitchtracker
+            this.pitchTracker = new Pitch.PitchTracker();
+            this.pitchTracker.SampleRate = 16000.0;
+            this.floatArray = new float[this.audioBuffer.Length / 4];
+            AudioSource audioSource = this.kinectSensor.AudioSource;
 
+            // Allocate 1024 bytes to hold a single audio sub frame. Duration sub frame 
+            // is 16 msec, the sample rate is 16khz, which means 256 samples per sub frame. 
+            // With 4 bytes per sample, that gives us 1024 bytes.
+            this.audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
             //this.kinect32BitStream = input;
         }
 
@@ -456,7 +489,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             {
                 string path = @"unknownPeople.csv";
                 string path2 = @"knownPeople.csv";
-              
+                string name = "";
                 string delimiter = ";";
                     if (File.Exists(path) && counter<101)
                     {
@@ -515,7 +548,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                     if (counter > 100)
                     {
                         counter = 0;
-                        string name = recognise(output,path2);
+                        name = recognise(output,path2);
                         if (name != "")
                         { recognised = true; }
                         if (!recognised)

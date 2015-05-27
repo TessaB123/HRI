@@ -95,6 +95,21 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="pitchtracker\Pitch\CircularBuffer.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\Pitch\Extensions.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\Pitch\IIRFilter.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\Pitch\PitchDsp.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="pitchtracker\Pitch\PitchTracker.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -130,7 +145,10 @@
     <Resource Include="Images\Logo.png" />
     <Resource Include="Images\Status.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="pitchtracker\PitchTracker.csproj" />
+    <Content Include="pitchtracker\PitchTracker.sln" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
