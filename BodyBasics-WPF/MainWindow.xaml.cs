@@ -258,16 +258,17 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             this.InitializeComponent();
             
             // set pitchtracker
+            AudioSource audioSource = this.kinectSensor.AudioSource;
+
+            this.audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
             this.pitchTracker = new Pitch.PitchTracker();
             this.pitchTracker.SampleRate = 16000.0;
             this.floatArray = new float[this.audioBuffer.Length / 4];
-            AudioSource audioSource = this.kinectSensor.AudioSource;
-
+           
             // Allocate 1024 bytes to hold a single audio sub frame. Duration sub frame 
             // is 16 msec, the sample rate is 16khz, which means 256 samples per sub frame. 
             // With 4 bytes per sample, that gives us 1024 bytes.
-            this.audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
-            //this.kinect32BitStream = input;
+             //this.kinect32BitStream = input;
         }
 
         /// <summary>
@@ -494,7 +495,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                     if (File.Exists(path) && counter<101)
                     {
                         string text = File.ReadAllText(path);
-                        text.Replace("\r", "");
+                        text = text.Replace( "\r\n", "\n");
                         int l = text.Length;
                         for (int i = l- 1; i >= 0; i--)
                         {
@@ -520,8 +521,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                        
                         data.Add(values);
                         values = new List<string>();
-                      
-                        counter = Convert.ToDouble(data[0][0])+1;
+                        string sdfae = data[0][0];
+                        counter = Convert.ToDouble(data[0][0].Replace("\n",string.Empty))+1;
                         Console.Write(counter);
                     }
                     else
@@ -531,7 +532,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                     }
                     if (counter == 0.0)
                     {
-                        output = new string[][] { new string[] {""+ body.TrackingId, bodyLength.ToString(), legLength.ToString(), armLength.ToString(), shoulderWidth.ToString(), torso.ToString(), counter.ToString() } };
+                        output = new string[][] { new string[] {""+ body.TrackingId, (bodyLength*1000).ToString(), (legLength*1000).ToString(), (armLength*1000).ToString(), (shoulderWidth*1000).ToString(), (torso*1000).ToString(), counter.ToString() } };
                         int length2 = output.GetLength(0);
                         StringBuilder sb = new StringBuilder();
                         for (int i = 0; i < length2; i++)
@@ -543,11 +544,10 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                     else
                     {
 
-                        output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso) / counter).ToString(), counter.ToString() } };
+                        output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5])  * (counter - 1) + bodyLength* 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3])* (counter - 1) + armLength* 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth* 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso* 1000) / counter).ToString(), counter.ToString() } };
                     }
                     if (counter > 100)
                     {
-                        counter = 0;
                         name = recognise(output,path2);
                         if (name != "")
                         { recognised = true; }
@@ -555,7 +555,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                         {   
                             //name = InputName();
                             name = body.TrackingId + "";
-                            output = new string[][] { new string[] { name, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso) / counter).ToString(), counter.ToString() } };
+                            output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
                             int length = output.GetLength(0);
                             StringBuilder sb2 = new StringBuilder();
                             for (int i = 0; i < length; i++)
@@ -571,8 +571,8 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                         }
                         else
                         {
-                            
-                            output = new string[][] { new string[] { name, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso) / counter).ToString(), counter.ToString() } };
+
+                            output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
                      
                         }
 
@@ -600,11 +600,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                         }
                         else { File.WriteAllText(path, sb2.ToString()); }
                 }
-                    }
-               
-                 
-            
-            
+            }     
         }
 
 
@@ -615,34 +611,40 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             string name = "";
             double smallestDist = 999999999999999999999.0;
             double sum = 0;
-            
-
-
-
-            using (TextFieldParser parser = new TextFieldParser(path))
+            if (File.Exists(path))
             {
-                parser.TextFieldType = FieldType.Delimited;
-                parser.SetDelimiters(";");
-                while (!parser.EndOfData)
+                using (TextFieldParser parser = new TextFieldParser(path))
                 {
-                    //Processing row
-                    string[] fields = parser.ReadFields();
-                    for (int i = 1; i < fields.Length; i++)
+                    parser.TextFieldType = FieldType.Delimited;
+                    parser.SetDelimiters(";");
+                    while (!parser.EndOfData)
                     {
-                        sum+=Math.Pow((Convert.ToDouble(fields[i])-Convert.ToDouble(output[0][i])),2);
-                    }
-                    distance=Math.Sqrt(sum);
-                       
-                            if (smallestDist > distance)
-                            {
-                                smallestDist = distance;
-                                name = fields[0];
-                            }
+                        //Processing row
+                        string[] fields = parser.ReadFields();
+                        for (int i = 1; i < fields.Length - 1; i++)
+                        {
+                            double a = Convert.ToDouble(fields[i]);
+                            double b = Convert.ToDouble(output[0][i]);
+                            double c = (a - b);
+                            double asdflh = Math.Pow(c, 2);
+                            sum += asdflh;
                         }
-                if (smallestDist<1)
+
+                        distance = Math.Sqrt(sum);
+                        sum = 0;
+                        if (smallestDist > distance)
+                        {
+                            smallestDist = distance;
+                            name = fields[0];
+                        }
+                    }
+                    parser.Close(); 
+                }
+            }
+                if (smallestDist<0.01)
                 {return name;}
                 else {return "";}
-                    }
+                    
                 }
 
 
