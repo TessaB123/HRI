@@ -15,6 +15,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     using System.IO;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
@@ -34,6 +35,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
     /// <summary>
     /// Interaction logic for MainWindow
     /// </summary>
+    /// 
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         /// <summary>
@@ -142,20 +144,25 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         private string statusText = null;
 
         private Stream kinect32BitStream;
-        private Pitch.PitchTracker pitchTracker;
-        private readonly byte[] audioBuffer = null;
-        private readonly float[] floatArray = null;
+        private AudioBeamFrameReader reader = null;
+        AudioSource audioSource;
+        private float accumulatedSquareSum;
+        private int accumulatedSampleCount;
         private byte[] packetData;
+         Pitch.PitchTracker pitchTracker;
+         private const int BytesPerSample = sizeof(float);
+
+     
+         private const int SamplesPerColumn = 40;
+
+           
+            byte[] audioBuffer = null;
+            float[] floatArray = null;
         string IP;
         int port;
         private  IPEndPoint ep;
         Socket client;
-        /*
-         *              this.pitchTracker.ProcessBuffer(this.floatArray);
-
-                        Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
-                        Console.WriteLine("     Hoi");
-         */
+        
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
@@ -258,18 +265,117 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             this.InitializeComponent();
             
             // set pitchtracker
-            AudioSource audioSource = this.kinectSensor.AudioSource;
+            audioSource = this.kinectSensor.AudioSource;
+            audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
+            floatArray = new float[audioBuffer.Length / 4];
+            this.reader = audioSource.OpenReader();
+            pitchTracker = new Pitch.PitchTracker();
+            pitchTracker.SampleRate = 16000.0;
+            if (this.reader != null)
+            {
+                // Subscribe to new audio frame arrived events
+                this.reader.FrameArrived += this.Reader_FrameArrived;
+            }
 
-            this.audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
-            this.pitchTracker = new Pitch.PitchTracker();
-            this.pitchTracker.SampleRate = 16000.0;
-            this.floatArray = new float[this.audioBuffer.Length / 4];
+            
            
+         
             // Allocate 1024 bytes to hold a single audio sub frame. Duration sub frame 
             // is 16 msec, the sample rate is 16khz, which means 256 samples per sub frame. 
             // With 4 bytes per sample, that gives us 1024 bytes.
              //this.kinect32BitStream = input;
         }
+
+        private void Reader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
+        {
+            AudioBeamFrameReference frameReference = e.FrameReference;
+            AudioBeamFrameList frameList = frameReference.AcquireBeamFrames();
+
+            if (frameList != null)
+            {
+                // AudioBeamFrameList is IDisposable
+                using (frameList)
+                {
+                    // Only one audio beam is supported. Get the sub frame list for this beam
+                    IReadOnlyList<AudioBeamSubFrame> subFrameList = frameList[0].SubFrames;
+
+                    // Loop over all sub frames, extract audio buffer and beam information
+                    foreach (AudioBeamSubFrame subFrame in subFrameList)
+                    {
+                        // Process audio buffer
+                        subFrame.CopyFrameDataToArray(this.audioBuffer);
+
+                        Buffer.BlockCopy(this.audioBuffer, 0, this.floatArray, 0, this.audioBuffer.Length);
+                        this.pitchTracker.ProcessBuffer(this.floatArray);
+                        Console.WriteLine(subFrame.BeamAngle * 180.0f / (float)Math.PI);
+                        IReadOnlyList<AudioBodyCorrelation> asdf=subFrame.AudioBodyCorrelations;
+                      //  Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
+                      //  Console.WriteLine("     Hoi");
+
+                        for (int i = 0; i < this.audioBuffer.Length; i += BytesPerSample)
+                        {
+                            // Extract the 32-bit IEEE float sample from the byte array
+                            float audioSample = BitConverter.ToSingle(this.audioBuffer, i);
+
+                            this.accumulatedSquareSum += audioSample * audioSample;
+                            ++this.accumulatedSampleCount;
+
+                            if (this.accumulatedSampleCount < SamplesPerColumn)
+                            {
+                                continue;
+                            }
+
+                            float meanSquare = this.accumulatedSquareSum / SamplesPerColumn;
+
+                            if (meanSquare > 1.0f)
+                            {
+                                // A loud audio source right next to the sensor may result in mean square values
+                                // greater than 1.0. Cap it at 1.0f for display purposes.
+                                meanSquare = 1.0f;
+                            }
+
+                            this.accumulatedSquareSum = 0;
+                            this.accumulatedSampleCount = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        public Thread StartTheThread(AudioSource audioSource)
+        {
+            
+            var t = new Thread(() => RealStart(audioSource));
+            t.Start();
+            return t;
+        }
+        private void RealStart(AudioSource audioSource)
+        {
+
+            Pitch.PitchTracker pitchTracker;
+            pitchTracker = new Pitch.PitchTracker();
+            pitchTracker.SampleRate = 16000.0;
+           
+            byte[] audioBuffer = null;
+            float[] floatArray = null;
+            while (!_shouldStop)
+                {
+                    audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
+                    floatArray = new float[audioBuffer.Length / 4];
+                    pitchTracker.ProcessBuffer(floatArray);
+                    if (pitchTracker.CurrentPitchRecord.Pitch>0)
+                    Console.WriteLine("     " + pitchTracker.CurrentPitchRecord.Pitch);
+                
+                }
+
+        
+        }
+        public void RequistStop()
+            {
+                _shouldStop = true;
+            }
+            private volatile bool _shouldStop;
+       
 
         /// <summary>
         /// INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
