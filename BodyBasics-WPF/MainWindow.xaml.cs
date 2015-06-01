@@ -149,29 +149,29 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         private float accumulatedSquareSum;
         private int accumulatedSampleCount;
         private byte[] packetData;
-         Pitch.PitchTracker pitchTracker;
-         private const int BytesPerSample = sizeof(float);
+        Pitch.PitchTracker pitchTracker;
+        private const int BytesPerSample = sizeof(float);
 
-     
-         private const int SamplesPerColumn = 40;
 
-           
-            byte[] audioBuffer = null;
-            float[] floatArray = null;
+        private const int SamplesPerColumn = 40;
+
+
+        byte[] audioBuffer = null;
+        float[] floatArray = null;
         string IP;
         int port;
-        private  IPEndPoint ep;
+        private IPEndPoint ep;
         Socket client;
-        
+
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
         /// </summary>
         public MainWindow()
         {
             //initialyse socket
-            this.IP= "127.0.0.1";
-            this.port= 80;
-            this.ep =new IPEndPoint(IPAddress.Parse(this.IP), port);
+            this.IP = "127.0.0.1";
+            this.port = 80;
+            this.ep = new IPEndPoint(IPAddress.Parse(this.IP), port);
             this.client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             //client.sentTo(pakcetData, ep)
             // client.timeout(1)
@@ -247,7 +247,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
             System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
 
-            
+
             // set the status text
             this.StatusText = this.kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
                                                             : Properties.Resources.NoSensorStatusText;
@@ -263,7 +263,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
             // initialize the components (controls) of the window
             this.InitializeComponent();
-            
+
             // set pitchtracker
             audioSource = this.kinectSensor.AudioSource;
             audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
@@ -277,13 +277,13 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                 this.reader.FrameArrived += this.Reader_FrameArrived;
             }
 
-            
-           
-         
+
+
+
             // Allocate 1024 bytes to hold a single audio sub frame. Duration sub frame 
             // is 16 msec, the sample rate is 16khz, which means 256 samples per sub frame. 
             // With 4 bytes per sample, that gives us 1024 bytes.
-             //this.kinect32BitStream = input;
+            //this.kinect32BitStream = input;
         }
 
         private void Reader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
@@ -308,9 +308,9 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                         Buffer.BlockCopy(this.audioBuffer, 0, this.floatArray, 0, this.audioBuffer.Length);
                         this.pitchTracker.ProcessBuffer(this.floatArray);
                         Console.WriteLine(subFrame.BeamAngle * 180.0f / (float)Math.PI);
-                        IReadOnlyList<AudioBodyCorrelation> asdf=subFrame.AudioBodyCorrelations;
-                      //  Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
-                      //  Console.WriteLine("     Hoi");
+                        IReadOnlyList<AudioBodyCorrelation> asdf = subFrame.AudioBodyCorrelations;
+                        //  Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
+                        //  Console.WriteLine("     Hoi");
 
                         for (int i = 0; i < this.audioBuffer.Length; i += BytesPerSample)
                         {
@@ -344,7 +344,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
         public Thread StartTheThread(AudioSource audioSource)
         {
-            
+
             var t = new Thread(() => RealStart(audioSource));
             t.Start();
             return t;
@@ -355,27 +355,27 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             Pitch.PitchTracker pitchTracker;
             pitchTracker = new Pitch.PitchTracker();
             pitchTracker.SampleRate = 16000.0;
-           
+
             byte[] audioBuffer = null;
             float[] floatArray = null;
             while (!_shouldStop)
-                {
-                    audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
-                    floatArray = new float[audioBuffer.Length / 4];
-                    pitchTracker.ProcessBuffer(floatArray);
-                    if (pitchTracker.CurrentPitchRecord.Pitch>0)
+            {
+                audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
+                floatArray = new float[audioBuffer.Length / 4];
+                pitchTracker.ProcessBuffer(floatArray);
+                if (pitchTracker.CurrentPitchRecord.Pitch > 0)
                     Console.WriteLine("     " + pitchTracker.CurrentPitchRecord.Pitch);
-                
-                }
 
-        
+            }
+
+
         }
         public void RequistStop()
-            {
-                _shouldStop = true;
-            }
-            private volatile bool _shouldStop;
-       
+        {
+            _shouldStop = true;
+        }
+        private volatile bool _shouldStop;
+
 
         /// <summary>
         /// INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
@@ -459,7 +459,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
         /// <param name="e">event arguments</param>
         private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
-          
+
 
             // csv writer
             //var csvw = new StreamWriter("CSV.csv");
@@ -491,12 +491,12 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                 {
                     // Draw a transparent background to set the render size
                     dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, this.displayWidth, this.displayHeight));
-                    
+
                     int penIndex = 0;
-                   // tblHeights.Text = string.Empty;
+                    // tblHeights.Text = string.Empty;
                     foreach (Body body in this.bodies)
                     {
-                        
+
                         Pen drawPen = this.bodyColors[penIndex++];
 
                         if (body.IsTracked)
@@ -520,15 +520,15 @@ namespace Microsoft.Samples.Kinect.BodyBasics
 
                                 DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
                                 jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
-                               
+
                             }
-                            this.DrawOutputMeasures(joints, jointPoints, dc, drawPen, Height(body),body);
+                            this.DrawOutputMeasures(joints, jointPoints, dc, drawPen, Height(body), body);
                             this.DrawBody(joints, jointPoints, dc, drawPen);
                             //joints[JointType.Neck].Position.
                             this.DrawHand(body.HandLeftState, jointPoints[JointType.HandLeft], dc);
                             this.DrawHand(body.HandRightState, jointPoints[JointType.HandRight], dc);
                         }
-                      
+
                     }
 
                     // prevent drawing outside of our render area
@@ -537,12 +537,12 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             }
         }
 
-        private void DrawOutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen,double[] bodym, Body body )
-        {   
+        private void DrawOutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen, double[] bodym, Body body)
+        {
             string testString = "";
             double bodyLength = (bodym[0]);
-           
-           
+
+
             // ToString(Math.Round(Height(body), 2));
             testString = Math.Round(bodyLength, 2).ToString(); //string.Format("", body.TrackingId, );
             FormattedText formattedText = new FormattedText("lengte: " + testString, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
@@ -573,10 +573,10 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             Point textLocTorso = new Point(jointPoints[JointType.SpineMid].X + 100, jointPoints[JointType.SpineMid].Y);
             drawingContext.DrawText(formattedTextTorso, textLocTorso);
 
-          
-            
+
+
             FormattedText formattedTextbodyid = new FormattedText("ID: " + body.TrackingId, CultureInfo.GetCultureInfo("en-us"), FlowDirection.LeftToRight, new Typeface("Comic Sans"), 12, drawingPen.Brush);
-            Point textLocbodyid = new Point(jointPoints[JointType.Head].X , jointPoints[JointType.Head].Y-10);
+            Point textLocbodyid = new Point(jointPoints[JointType.Head].X, jointPoints[JointType.Head].Y - 10);
             drawingContext.DrawText(formattedTextbodyid, textLocbodyid);
 
             bool recognised = false;
@@ -598,115 +598,115 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                 string path2 = @"knownPeople.csv";
                 string name = "";
                 string delimiter = ";";
-                    if (File.Exists(path) && counter<101)
-                    {
-                        string text = File.ReadAllText(path);
-                        text = text.Replace( "\r\n", "\n");
-                        int l = text.Length;
-                        for (int i = l- 1; i >= 0; i--)
-                        {
-                            
-                            if (text[i] == ';')
-                            {
-                                String a=text.Substring(i + 1);
-                                values.Add(a);
-                                text = text.Remove(i + 1); 
-                                
-                                text=text.Remove(i);
-                            }
-                           else if (text[i] == '\n'&& counter!=0)
-                            {
-
-                                String d = text.Substring(i+1);
-                                values.Add(d);
-                                text = text.Remove(i + 1);
-                                text = text.Remove(i);
-                            }
-                        }
-
-                       
-                        data.Add(values);
-                        values = new List<string>();
-                        string sdfae = data[0][0];
-                        counter = Convert.ToDouble(data[0][0].Replace("\n",string.Empty))+1;
-                        Console.Write(counter);
-                    }
-                    else
-                    {
-                        Console.Write("counter =0");
-                        counter = 0;
-                    }
-                    if (counter == 0.0)
-                    {
-                        output = new string[][] { new string[] {""+ body.TrackingId, (bodyLength*1000).ToString(), (legLength*1000).ToString(), (armLength*1000).ToString(), (shoulderWidth*1000).ToString(), (torso*1000).ToString(), counter.ToString() } };
-                        int length2 = output.GetLength(0);
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < length2; i++)
-                        {
-                            sb.AppendLine(string.Join(delimiter, output[i]));
-                        }
-                        File.WriteAllText(path, sb.ToString());
-                    }
-                    else
-                    {
-
-                        output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5])  * (counter - 1) + bodyLength* 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3])* (counter - 1) + armLength* 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth* 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso* 1000) / counter).ToString(), counter.ToString() } };
-                    }
-                    if (counter > 100)
-                    {
-                        name = recognise(output,path2);
-                        if (name != "")
-                        { recognised = true; }
-                        if (!recognised)
-                        {   
-                            //name = InputName();
-                            name = body.TrackingId + "";
-                            output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
-                            int length = output.GetLength(0);
-                            StringBuilder sb2 = new StringBuilder();
-                            for (int i = 0; i < length; i++)
-                            {
-                                sb2.AppendLine(string.Join(delimiter, output[i]));
-                            }
-                            if (File.Exists(path2))
-                            { File.WriteAllText(path2, File.ReadAllText(path2) + sb2.ToString()); }
-                            else
-                            { File.WriteAllText(path2, sb2.ToString()); }
-
-                            
-                        }
-                        else
-                        {
-
-                            output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
-                     
-                        }
-
-                    }
-                if(!recognised)
+                if (File.Exists(path) && counter < 101)
                 {
+                    string text = File.ReadAllText(path);
+                    text = text.Replace("\r\n", "\n");
+                    int l = text.Length;
+                    for (int i = l - 1; i >= 0; i--)
+                    {
+
+                        if (text[i] == ';')
+                        {
+                            String a = text.Substring(i + 1);
+                            values.Add(a);
+                            text = text.Remove(i + 1);
+
+                            text = text.Remove(i);
+                        }
+                        else if (text[i] == '\n' && counter != 0)
+                        {
+
+                            String d = text.Substring(i + 1);
+                            values.Add(d);
+                            text = text.Remove(i + 1);
+                            text = text.Remove(i);
+                        }
+                    }
+
+
+                    data.Add(values);
+                    values = new List<string>();
+                    string sdfae = data[0][0];
+                    counter = Convert.ToDouble(data[0][0].Replace("\n", string.Empty)) + 1;
+                    Console.Write(counter);
+                }
+                else
+                {
+                    Console.Write("counter =0");
+                    counter = 0;
+                }
+                if (counter == 0.0)
+                {
+                    output = new string[][] { new string[] { "" + body.TrackingId, (bodyLength * 1000).ToString(), (legLength * 1000).ToString(), (armLength * 1000).ToString(), (shoulderWidth * 1000).ToString(), (torso * 1000).ToString(), counter.ToString() } };
+                    int length2 = output.GetLength(0);
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < length2; i++)
+                    {
+                        sb.AppendLine(string.Join(delimiter, output[i]));
+                    }
+                    File.WriteAllText(path, sb.ToString());
+                }
+                else
+                {
+
+                    output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
+                }
+                if (counter > 100)
+                {
+                    name = recognise(output, path2);
+                    if (name != "")
+                    { recognised = true; }
+                    if (!recognised)
+                    {
+                        //name = InputName();
+                        name = body.TrackingId + "";
+                        output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
                         int length = output.GetLength(0);
                         StringBuilder sb2 = new StringBuilder();
                         for (int i = 0; i < length; i++)
                         {
                             sb2.AppendLine(string.Join(delimiter, output[i]));
                         }
-                     
-                            if (File.Exists(path))
-                            {
-                                File.WriteAllText(path, File.ReadAllText(path) + sb2.ToString());
+                        if (File.Exists(path2))
+                        { File.WriteAllText(path2, File.ReadAllText(path2) + sb2.ToString()); }
+                        else
+                        { File.WriteAllText(path2, sb2.ToString()); }
 
-                            }
-                            else { File.WriteAllText(path,  File.ReadAllText(path) + sb2.ToString()); }
-                        
-                        if (File.Exists(path))
-                        {
-                            File.WriteAllText(path, sb2.ToString());
 
-                        }
-                        else { File.WriteAllText(path, sb2.ToString()); }
+                    }
+                    else
+                    {
+
+                        output = new string[][] { new string[] { "" + body.TrackingId, ((Convert.ToDouble(data[0][5]) * (counter - 1) + bodyLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][4]) * (counter - 1) + legLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][3]) * (counter - 1) + armLength * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][2]) * (counter - 1) + shoulderWidth * 1000) / counter).ToString(), ((Convert.ToDouble(data[0][1]) * (counter - 1) + torso * 1000) / counter).ToString(), counter.ToString() } };
+
+                    }
+
                 }
-            }     
+                if (!recognised)
+                {
+                    int length = output.GetLength(0);
+                    StringBuilder sb2 = new StringBuilder();
+                    for (int i = 0; i < length; i++)
+                    {
+                        sb2.AppendLine(string.Join(delimiter, output[i]));
+                    }
+
+                    if (File.Exists(path))
+                    {
+                        File.WriteAllText(path, File.ReadAllText(path) + sb2.ToString());
+
+                    }
+                    else { File.WriteAllText(path, File.ReadAllText(path) + sb2.ToString()); }
+
+                    if (File.Exists(path))
+                    {
+                        File.WriteAllText(path, sb2.ToString());
+
+                    }
+                    else { File.WriteAllText(path, sb2.ToString()); }
+                }
+            }
         }
 
 
@@ -744,14 +744,14 @@ namespace Microsoft.Samples.Kinect.BodyBasics
                             name = fields[0];
                         }
                     }
-                    parser.Close(); 
+                    parser.Close();
                 }
             }
-                if (smallestDist<0.01)
-                {return name;}
-                else {return "";}
-                    
-                }
+            if (smallestDist < 0.01)
+            { return name; }
+            else { return ""; }
+
+        }
 
 
         private string InputName()
@@ -932,7 +932,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             var handRight = skeleton.Joints[JointType.HandRight];
             var handTipLeft = skeleton.Joints[JointType.HandTipLeft];
             var handTipRight = skeleton.Joints[JointType.HandTipRight];
-            
+
 
 
             // Find which leg is tracked more accurately.
@@ -942,7 +942,7 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             NumberOfTrackedJoints(hipRight, kneeRight, ankleRight, footRight);
             int armLeftTrackedJoints = NumberOfTrackedJoints(shoulderLeft, elbowLeft, wristLeft, handLeft, handTipLeft);
             int armRightTrackedJoints = NumberOfTrackedJoints(shoulderRight, elbowRight, wristRight, handRight, handTipRight);
-            
+
             double shoulderWidth = Length(shoulderLeft, neck, shoulderRight);
             double torso = Length(neck, spine, waist);
 
@@ -951,10 +951,10 @@ namespace Microsoft.Samples.Kinect.BodyBasics
               footLeft) : Length(hipRight, kneeRight, ankleRight, footRight);
 
             double armLength = armLeftTrackedJoints > armRightTrackedJoints ?
-                Length(shoulderLeft, elbowLeft, wristLeft, handLeft, handTipLeft) 
+                Length(shoulderLeft, elbowLeft, wristLeft, handLeft, handTipLeft)
                 : Length(shoulderRight, elbowRight, wristRight, handRight, handTipRight);
 
-            double[] buh = { Length(head, neck, spine, waist) + legLength + HEAD_DIVERGENCE, legLength, armLength, shoulderWidth, torso};
+            double[] buh = { Length(head, neck, spine, waist) + legLength + HEAD_DIVERGENCE, legLength, armLength, shoulderWidth, torso };
 
             return buh;
         }
@@ -1015,198 +1015,190 @@ namespace Microsoft.Samples.Kinect.BodyBasics
             }
         }
 
-       
 
-        private void TextBox_TouchEnter_1(object sender, TouchEventArgs e)
-        {
-               
-        }
 
-        private void retrieveInput_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(this.inputText.Text);
-        }
 
-        
 
-        
+
+
     }
 
     /// <summary>
     /// Wrapper Stream Class to Support 32->16bit conversion and support Speech call to Seek
     /// </summary>
-    internal class KinectAudioStream : Stream
-    {
-        /// <summary>
-        /// Holds the kinect audio stream, in 32-bit IEEE float format
-        /// </summary>
-        private Stream kinect32BitStream;
+    //    internal class KinectAudioStream : Stream
+    //    {
+    //        /// <summary>
+    //        /// Holds the kinect audio stream, in 32-bit IEEE float format
+    //        /// </summary>
+    //        private Stream kinect32BitStream;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="KinectAudioStream" /> class.
-        /// </summary>
-        /// <param name="input">Kinect audio stream</param>
-        public KinectAudioStream(Stream input)
-        {
-            this.kinect32BitStream = input;
-        }
+    //        /// <summary>
+    //        /// Initializes a new instance of the <see cref="KinectAudioStream" /> class.
+    //        /// </summary>
+    //        /// <param name="input">Kinect audio stream</param>
+    //        public KinectAudioStream(Stream input)
+    //        {
+    //            this.kinect32BitStream = input;
+    //        }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether speech recognition is active
-        /// </summary>
-        public bool SpeechActive { get; set; }
+    //        /// <summary>
+    //        /// Gets or sets a value indicating whether speech recognition is active
+    //        /// </summary>
+    //        public bool SpeechActive { get; set; }
 
-        /// <summary>
-        /// CanRead property
-        /// </summary>
-        public override bool CanRead
-        {
-            get { return true; }
-        }
+    //        /// <summary>
+    //        /// CanRead property
+    //        /// </summary>
+    //        public override bool CanRead
+    //        {
+    //            get { return true; }
+    //        }
 
-        /// <summary>
-        /// CanWrite property
-        /// </summary>
-        public override bool CanWrite
-        {
-            get { return false; }
-        }
+    //        /// <summary>
+    //        /// CanWrite property
+    //        /// </summary>
+    //        public override bool CanWrite
+    //        {
+    //            get { return false; }
+    //        }
 
-        /// <summary>
-        /// CanSeek property
-        /// </summary>
-        public override bool CanSeek
-        {
-            // Speech does not call - but set value correctly
-            get { return false; }
-        }
+    //        /// <summary>
+    //        /// CanSeek property
+    //        /// </summary>
+    //        public override bool CanSeek
+    //        {
+    //            // Speech does not call - but set value correctly
+    //            get { return false; }
+    //        }
 
-        /// <summary>
-        /// Position Property
-        /// </summary>
-        public override long Position
-        {
-            // Speech gets the position
-            get { return 0; }
-            set { throw new NotImplementedException(); }
-        }
+    //        /// <summary>
+    //        /// Position Property
+    //        /// </summary>
+    //        public override long Position
+    //        {
+    //            // Speech gets the position
+    //            get { return 0; }
+    //            set { throw new NotImplementedException(); }
+    //        }
 
-        /// <summary>
-        /// Gets the length of the stream. Not implemented.
-        /// </summary>
-        public override long Length
-        {
-            get { throw new NotImplementedException(); }
-        }
+    //        /// <summary>
+    //        /// Gets the length of the stream. Not implemented.
+    //        /// </summary>
+    //        public override long Length
+    //        {
+    //            get { throw new NotImplementedException(); }
+    //        }
 
-        /// <summary>
-        /// Flush the stream. Not implemented.
-        /// </summary>
-        public override void Flush()
-        {
-            throw new NotImplementedException();
-        }
+    //        /// <summary>
+    //        /// Flush the stream. Not implemented.
+    //        /// </summary>
+    //        public override void Flush()
+    //        {
+    //            throw new NotImplementedException();
+    //        }
 
-        /// <summary>
-        /// Stream Seek. Not implemented and always returns 0.
-        /// </summary>
-        /// <param name="offset">A byte offset relative to the origin parameter</param>
-        /// <param name="origin">A value of type SeekOrigin indicating the reference point used to obtain the new position</param>
-        /// <returns>Always returns 0</returns>
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            // Even though CanSeek == false, Speech still calls seek. Return 0 to make Speech happy instead of NotImplementedException()
-            return 0;
-        }
+    //        /// <summary>
+    //        /// Stream Seek. Not implemented and always returns 0.
+    //        /// </summary>
+    //        /// <param name="offset">A byte offset relative to the origin parameter</param>
+    //        /// <param name="origin">A value of type SeekOrigin indicating the reference point used to obtain the new position</param>
+    //        /// <returns>Always returns 0</returns>
+    //        public override long Seek(long offset, SeekOrigin origin)
+    //        {
+    //            // Even though CanSeek == false, Speech still calls seek. Return 0 to make Speech happy instead of NotImplementedException()
+    //            return 0;
+    //        }
 
-        /// <summary>
-        /// Set the length of the stream. Not implemented.
-        /// </summary>
-        /// <param name="value">Length of the stream</param>
-        public override void SetLength(long value)
-        {
-            throw new NotImplementedException();
-        }
+    //        /// <summary>
+    //        /// Set the length of the stream. Not implemented.
+    //        /// </summary>
+    //        /// <param name="value">Length of the stream</param>
+    //        public override void SetLength(long value)
+    //        {
+    //            throw new NotImplementedException();
+    //        }
 
-        /// <summary>
-        /// Write into the stream. Not implemented.
-        /// </summary>
-        /// <param name="buffer">Buffer to write</param>
-        /// <param name="offset">Offset into the buffer</param>
-        /// <param name="count">Number of bytes to write</param>
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotImplementedException();
-        }
+    //        /// <summary>
+    //        /// Write into the stream. Not implemented.
+    //        /// </summary>
+    //        /// <param name="buffer">Buffer to write</param>
+    //        /// <param name="offset">Offset into the buffer</param>
+    //        /// <param name="count">Number of bytes to write</param>
+    //        public override void Write(byte[] buffer, int offset, int count)
+    //        {
+    //            throw new NotImplementedException();
+    //        }
 
-        /// <summary>
-        /// Read from the stream and convert from 32 bit IEEE float to 16 bit signed integer
-        /// </summary>
-        /// <param name="buffer">Input buffer</param>
-        /// <param name="offset">Offset into buffer</param>
-        /// <param name="count">Number of bytes to read</param>
-        /// <returns>bytes read</returns>
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            // Kinect gives 32-bit float samples. Speech asks for 16-bit integer samples.
-            const int SampleSizeRatio = sizeof(float) / sizeof(short); // = 2. 
+    //        /// <summary>
+    //        /// Read from the stream and convert from 32 bit IEEE float to 16 bit signed integer
+    //        /// </summary>
+    //        /// <param name="buffer">Input buffer</param>
+    //        /// <param name="offset">Offset into buffer</param>
+    //        /// <param name="count">Number of bytes to read</param>
+    //        /// <returns>bytes read</returns>
+    //        public override int Read(byte[] buffer, int offset, int count)
+    //        {
+    //            // Kinect gives 32-bit float samples. Speech asks for 16-bit integer samples.
+    //            const int SampleSizeRatio = sizeof(float) / sizeof(short); // = 2. 
 
-            // Speech reads at high frequency - allow some wait period between reads (in msec)
-            const int SleepDuration = 50;
+    //            // Speech reads at high frequency - allow some wait period between reads (in msec)
+    //            const int SleepDuration = 50;
 
-            // Allocate buffer for receiving 32-bit float from Kinect
-            int readcount = count * SampleSizeRatio;
-            byte[] kinectBuffer = new byte[readcount];
+    //            // Allocate buffer for receiving 32-bit float from Kinect
+    //            int readcount = count * SampleSizeRatio;
+    //            byte[] kinectBuffer = new byte[readcount];
 
-            int bytesremaining = readcount;
+    //            int bytesremaining = readcount;
 
-            // Speech expects all requested bytes to be returned
-            while (bytesremaining > 0)
-            {
-                // If we are no longer processing speech commands, exit
-                if (!this.SpeechActive)
-                {
-                    return 0;
-                }
+    //            // Speech expects all requested bytes to be returned
+    //            while (bytesremaining > 0)
+    //            {
+    //                // If we are no longer processing speech commands, exit
+    //                if (!this.SpeechActive)
+    //                {
+    //                    return 0;
+    //                }
 
-                int result = this.kinect32BitStream.Read(kinectBuffer, readcount - bytesremaining, bytesremaining);
-                bytesremaining -= result;
+    //                int result = this.kinect32BitStream.Read(kinectBuffer, readcount - bytesremaining, bytesremaining);
+    //                bytesremaining -= result;
 
-                // Speech will read faster than realtime - wait for more data to arrive
-                if (bytesremaining > 0)
-                {
-                    System.Threading.Thread.Sleep(SleepDuration);
-                }
-            }
+    //                // Speech will read faster than realtime - wait for more data to arrive
+    //                if (bytesremaining > 0)
+    //                {
+    //                    System.Threading.Thread.Sleep(SleepDuration);
+    //                }
+    //            }
 
-            // Convert each float audio sample to short
-            for (int i = 0; i < count / sizeof(short); i++)
-            {
-                // Extract a single 32-bit IEEE value from the byte array
-                float sample = BitConverter.ToSingle(kinectBuffer, i * sizeof(float));
+    //            // Convert each float audio sample to short
+    //            for (int i = 0; i < count / sizeof(short); i++)
+    //            {
+    //                // Extract a single 32-bit IEEE value from the byte array
+    //                float sample = BitConverter.ToSingle(kinectBuffer, i * sizeof(float));
 
-                // Make sure it is in the range [-1, +1]
-                if (sample > 1.0f)
-                {
-                    sample = 1.0f;
-                }
-                else if (sample < -1.0f)
-                {
-                    sample = -1.0f;
-                }
+    //                // Make sure it is in the range [-1, +1]
+    //                if (sample > 1.0f)
+    //                {
+    //                    sample = 1.0f;
+    //                }
+    //                else if (sample < -1.0f)
+    //                {
+    //                    sample = -1.0f;
+    //                }
 
-                // Scale float to the range (short.MinValue, short.MaxValue] and then 
-                // convert to 16-bit signed with proper rounding
-                short convertedSample = Convert.ToInt16(sample * short.MaxValue);
+    //                // Scale float to the range (short.MinValue, short.MaxValue] and then 
+    //                // convert to 16-bit signed with proper rounding
+    //                short convertedSample = Convert.ToInt16(sample * short.MaxValue);
 
-                // Place the resulting 16-bit sample in the output byte array
-                byte[] local = BitConverter.GetBytes(convertedSample);
-                System.Buffer.BlockCopy(local, 0, buffer, offset + (i * sizeof(short)), sizeof(short));
-            }
+    //                // Place the resulting 16-bit sample in the output byte array
+    //                byte[] local = BitConverter.GetBytes(convertedSample);
+    //                System.Buffer.BlockCopy(local, 0, buffer, offset + (i * sizeof(short)), sizeof(short));
+    //            }
 
-            return count;
-        }
-    }
+    //            return count;
+    //        }
+    //    }
 
 
+    //}
 }
