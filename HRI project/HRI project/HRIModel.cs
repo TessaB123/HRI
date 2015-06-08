@@ -18,7 +18,6 @@ using System.Windows.Controls;
 //using System.Windows.Data;
 //using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Point;
 //using System.Windows.Navigation;
 //using System.Windows.Shapes;
 using Microsoft.VisualBasic;
@@ -28,7 +27,6 @@ namespace HRI_project
 {
     class HRIModel
     {
-  
         /// <summary>
         /// Radius of drawn hand circles
         /// </summary>
@@ -50,46 +48,6 @@ namespace HRI_project
         private const float InferredZPositionClamp = 0.1f;
 
         /// <summary>
-        /// Brush used for drawing hands that are currently tracked as closed
-        /// </summary>
-        //private readonly Brush handClosedBrush = new SolidColorBrush(Color.FromArgb(128, 255, 0, 0));
-
-        /// <summary>
-        /// Brush used for drawing hands that are currently tracked as opened
-        /// </summary>
-      //  private readonly Brush handOpenBrush = new SolidColorBrush(Color.FromArgb(128, 0, 255, 0));
-
-        /// <summary>
-        /// Brush used for drawing hands that are currently tracked as in lasso (pointer) position
-        /// </summary>
-      //  private readonly Brush handLassoBrush = new SolidColorBrush(Color.FromArgb(128, 0, 0, 255));
-
-        /// <summary>
-        /// Brush used for drawing joints that are currently tracked
-        /// </summary>
-       // private readonly Brush trackedJointBrush = new SolidColorBrush(Color.FromArgb(255, 68, 192, 68));
-
-        /// <summary>
-        /// Brush used for drawing joints that are currently inferred
-        /// </summary>        
-      //  private readonly Brush inferredJointBrush = Brushes.Yellow;
-
-        /// <summary>
-        /// Pen used for drawing bones that are currently inferred
-        /// </summary>        
-      //  private readonly Pen inferredBonePen = new Pen(Brushes.Gray, 1);
-
-        /// <summary>
-        /// Drawing group for body rendering output
-        /// </summary>
-       // private DrawingGroup drawingGroup;
-
-        /// <summary>
-        /// Drawing image that we will display
-        /// </summary>
-      //  private DrawingImage imageSource;
-
-        /// <summary>
         /// Active Kinect sensor
         /// </summary>
         private KinectSensor kinectSensor = null;
@@ -109,6 +67,8 @@ namespace HRI_project
         /// </summary>
         private Body[] bodies = null;
 
+        private Body[] skeletons = null;
+
         /// <summary>
         /// definition of bones
         /// </summary>
@@ -125,11 +85,6 @@ namespace HRI_project
         private int displayHeight;
 
         /// <summary>
-        /// List of colors for each body tracked
-        /// </summary>
-     //   private List<Pen> bodyColors;
-
-        /// <summary>
         /// Current status text to display
         /// </summary>
         private string StatusText = null;
@@ -143,21 +98,11 @@ namespace HRI_project
         Pitch.PitchTracker pitchTracker;
         private const int BytesPerSample = sizeof(float);
 
-
         private const int SamplesPerColumn = 40;
-
 
         byte[] audioBuffer = null;
         float[] floatArray = null;
-        string IP;
-        int port;
-        private IPEndPoint ep;
-        Socket client;
-
-        /// <summary>
-        /// Initializes a new instance of the MainWindow class.
-        /// </summary>
-        /// </summary>
+        
         /// <summary>
         /// Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
         /// </summary>
@@ -172,13 +117,6 @@ namespace HRI_project
        
         public HRIModel ()
         {
-            this.IP= "127.0.0.1";
-            this.port= 80;
-            this.ep =new IPEndPoint(IPAddress.Parse(this.IP), port);
-            this.client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            //client.sentTo(pakcetData, ep)
-            // client.timeout(1)
-
             // one sensor is currently supported
             this.kinectSensor = KinectSensor.GetDefault();
 
@@ -195,6 +133,47 @@ namespace HRI_project
             // open the reader for the body frames
             this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
 
+            this.bones = createBonesList();
+            
+            // set IsAvailableChanged event notifier
+            this.kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
+
+            // open the sensor
+            this.kinectSensor.Open();
+            IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
+            System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
+
+            if (this.bodyFrameReader != null)
+            {
+                this.bodyFrameReader.FrameArrived += this.Sensor_SkeletonFrameReady;
+            }
+            
+            while (true)
+            {
+                if (skeletons != null)
+                {
+                    Console.WriteLine(AngleXY()[0]);
+                    Console.WriteLine(AngleXY()[1]);
+                    Console.WriteLine(Depth());
+                }
+            }
+
+            // set pitchtracker
+            audioSource = this.kinectSensor.AudioSource;
+            audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
+            floatArray = new float[audioBuffer.Length / 4];
+            this.reader = audioSource.OpenReader();
+            pitchTracker = new Pitch.PitchTracker();
+            pitchTracker.SampleRate = 16000.0;
+            if (this.reader != null)
+            {
+                // Subscribe to new audio frame arrived events
+                this.reader.FrameArrived += this.Reader_FrameArrived;
+            }
+        }
+
+        private List<Tuple<JointType, JointType>> createBonesList ()
+        {
             // a bone defined as a line between two joints
             this.bones = new List<Tuple<JointType, JointType>>();
 
@@ -232,58 +211,7 @@ namespace HRI_project
             this.bones.Add(new Tuple<JointType, JointType>(JointType.KneeLeft, JointType.AnkleLeft));
             this.bones.Add(new Tuple<JointType, JointType>(JointType.AnkleLeft, JointType.FootLeft));
 
-            // populate body colors, one for each BodyIndex
-            //this.bodyColors = new List<Pen>();
-
-            //this.bodyColors.Add(new Pen(Brushes.Red, 6));
-            //this.bodyColors.Add(new Pen(Brushes.Orange, 6));
-            //this.bodyColors.Add(new Pen(Brushes.Green, 6));
-            //this.bodyColors.Add(new Pen(Brushes.Blue, 6));
-            //this.bodyColors.Add(new Pen(Brushes.Indigo, 6));
-            //this.bodyColors.Add(new Pen(Brushes.Violet, 6));
-
-            // set IsAvailableChanged event notifier
-            this.kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
-
-            // open the sensor
-            this.kinectSensor.Open();
-            IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
-            System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
-
-            
-               // Create the drawing group we'll use for drawing
-            //this.drawingGroup = new DrawingGroup();
-
-            //// Create an image source that we can use in our image control
-            //this.imageSource = new DrawingImage(this.drawingGroup);
-
-            //// use the window object as the view model in this simple example
-            //this.DataContext = this;
-
-            //// initialize the components (controls) of the window
-            //this.InitializeComponent();
-            
-            // set pitchtracker
-            audioSource = this.kinectSensor.AudioSource;
-            audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
-            floatArray = new float[audioBuffer.Length / 4];
-            this.reader = audioSource.OpenReader();
-            pitchTracker = new Pitch.PitchTracker();
-            pitchTracker.SampleRate = 16000.0;
-            if (this.reader != null)
-            {
-                // Subscribe to new audio frame arrived events
-                this.reader.FrameArrived += this.Reader_FrameArrived;
-            }
-
-            
-           
-         
-            // Allocate 1024 bytes to hold a single audio sub frame. Duration sub frame 
-            // is 16 msec, the sample rate is 16khz, which means 256 samples per sub frame. 
-            // With 4 bytes per sample, that gives us 1024 bytes.
-             //this.kinect32BitStream = input;
-        
+            return bones;
         }
         
         private void Reader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
@@ -438,8 +366,9 @@ namespace HRI_project
             {
                 if (frame != null)
                 {
-                    Body[] skeletons = new Body[frame.BodyCount];
-                    frame.GetAndRefreshBodyData(skeletons);
+                    this.skeletons = new Body[frame.BodyCount];
+
+                    frame.GetAndRefreshBodyData(this.skeletons);
 
                     var skeleton = skeletons.Where(s => s.IsTracked).FirstOrDefault();
 
@@ -453,8 +382,6 @@ namespace HRI_project
 
         private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
-
-
             // csv writer
             //var csvw = new StreamWriter("CSV.csv");
             // csv reader
@@ -483,12 +410,8 @@ namespace HRI_project
             {
                     foreach (Body body in this.bodies)
                     {
-
-                      //  Pen drawPen = this.bodyColors[penIndex++];
-
                         if (body.IsTracked)
                         {
-
                             IReadOnlyDictionary<JointType, Joint> joints = body.Joints;
 
                             // convert the joint points to depth (display) space
@@ -506,23 +429,12 @@ namespace HRI_project
 
                                 DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
                                 jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
-
                             }
-                           // this.DrawOutputMeasures(joints, jointPoints, dc, drawPen, Height(body), body);
-                           // this.DrawBody(joints, jointPoints, dc, drawPen);
-                            //joints[JointType.Neck].Position.
-                           // this.DrawHand(body.HandLeftState, jointPoints[JointType.HandLeft], dc);
-                           // this.DrawHand(body.HandRightState, jointPoints[JointType.HandRight], dc);
                         }
-
                     }
-
-                    // prevent drawing outside of our render area
-                   // this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, this.displayWidth, this.displayHeight));
                 }
             }
     
-
         private void OutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, double[] bodym, Body body)
         {
            
@@ -663,7 +575,6 @@ namespace HRI_project
             }
         }
 
-
         private string recognise(string[][] output, string path)
         {
 
@@ -707,10 +618,49 @@ namespace HRI_project
 
         }
 
-
         private string InputName()
         {
             return "";
+        }
+
+        private float[] AngleXY() 
+        {
+            CameraSpacePoint xyHeadLocation;
+            float[] angles = new float[2];
+            float xAngle = 2000; 
+            float yAngle = 2000;
+
+            var skeleton = skeletons.Where(s => s.IsTracked).FirstOrDefault();
+            if (skeleton != null)
+            {
+                var skeletonHead = skeleton.Joints[JointType.Head];
+                xyHeadLocation = skeletonHead.Position;
+
+                xAngle = xyHeadLocation.X;
+                yAngle = xyHeadLocation.Y;
+            }
+
+            angles[0] = xAngle;
+            angles[1] = yAngle;
+
+            return angles;
+        }
+
+        private float Depth ()
+        {
+            CameraSpacePoint zSpineMidLocation;
+            float depth = 2000;
+
+            var skeleton = skeletons.Where(s => s.IsTracked).FirstOrDefault();
+            if (skeleton != null)
+            {
+                var skeletonSpineMid = skeleton.Joints[JointType.SpineMid];
+                zSpineMidLocation = skeletonSpineMid.Position;
+
+                depth = zSpineMidLocation.Z;
+            }
+
+            return depth;
         }
     }
 }
