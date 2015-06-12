@@ -88,10 +88,11 @@ namespace HRI_project
             {
                 if (bodies != null && bodies.FirstOrDefault() != null)
                 {
-                    Console.WriteLine(bodies);
-                    Console.WriteLine(AngleXY()[0]);
-                    Console.WriteLine(AngleXY()[1]);
-                    Console.WriteLine(Depth());
+                    float[] locationHead = LocationHeadXY();
+                    float depth = Depth();
+
+                    Console.WriteLine(CalculateXAngle(locationHead[0], depth));
+                    Console.WriteLine(CalculateYAngle(locationHead[1], depth));
                 }
             }
 
@@ -556,12 +557,12 @@ namespace HRI_project
             return "";
         }
 
-        private float[] AngleXY() 
+        private float[] LocationHeadXY() 
         {
             CameraSpacePoint xyHeadLocation;
             float[] angles = new float[2];
-            float xAngle = 2000; 
-            float yAngle = 2000;
+            float xHead = 2000; 
+            float yHead = 2000;
 
             var body = bodies.Where(s => s.IsTracked).FirstOrDefault();
             if (body != null)
@@ -569,12 +570,12 @@ namespace HRI_project
                 var skeletonHead = body.Joints[JointType.Head];
                 xyHeadLocation = skeletonHead.Position;
 
-                xAngle = xyHeadLocation.X;
-                yAngle = xyHeadLocation.Y;
+                xHead = xyHeadLocation.X;
+                yHead = xyHeadLocation.Y;
             }
 
-            angles[0] = xAngle;
-            angles[1] = yAngle;
+            angles[0] = xHead;
+            angles[1] = yHead;
 
             return angles;
         }
@@ -594,6 +595,24 @@ namespace HRI_project
             }
 
             return depth;
+        }
+
+        private double CalculateYAngle(float yHead, float depth)
+        {
+            float yAngle = yHead / depth;
+         
+            double yTan = Math.Tan(yAngle);
+
+            return yTan;
+        }
+
+        private double CalculateXAngle(float xHead, float depth)
+        {
+            float xAngle = xHead / depth;
+
+            double xTan = Math.Tan(xAngle);
+
+            return xTan;
         }
     }
 }
