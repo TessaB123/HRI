@@ -8,18 +8,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
-//using System.Windows.Media;
-//using System.Windows.Media.Imaging;
 using Microsoft.Kinect;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-//using System.Windows.Data;
-//using System.Windows.Documents;
 using System.Windows.Input;
-//using System.Windows.Navigation;
-//using System.Windows.Shapes;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.FileIO;
 
@@ -27,74 +21,33 @@ namespace HRI_project
 {
     class HRIModel
     {
-        /// <summary>
-        /// Radius of drawn hand circles
-        /// </summary>
-        private const double HandSize = 30;
+        //private const double HandSize = 30;
 
-        /// <summary>
-        /// Thickness of drawn joint lines
-        /// </summary>
-        private const double JointThickness = 3;
+        //private const double JointThickness = 3;
 
-        /// <summary>
-        /// Thickness of clip edge rectangles
-        /// </summary>
-        private const double ClipBoundsThickness = 10;
+        //private const double ClipBoundsThickness = 10;
 
-        /// <summary>
-        /// Constant for clamping Z values of camera space points from being negative
-        /// </summary>
         private const float InferredZPositionClamp = 0.1f;
 
-        /// <summary>
-        /// Active Kinect sensor
-        /// </summary>
         private KinectSensor kinectSensor = null;
-
-        /// <summary>
-        /// Coordinate mapper to map one type of point to another
-        /// </summary>
         private CoordinateMapper coordinateMapper = null;
-
-        /// <summary>
-        /// Reader for body frames
-        /// </summary>
         private BodyFrameReader bodyFrameReader = null;
 
-        /// <summary>
-        /// Array for the bodies
-        /// </summary>
         private Body[] bodies = null;
-
-        private Body[] skeletons = null;
-
-        /// <summary>
-        /// definition of bones
-        /// </summary>
         private List<Tuple<JointType, JointType>> bones;
 
-        /// <summary>
-        /// Width of display (depth space)
-        /// </summary>
-        private int displayWidth;
+        //private int displayWidth;
+        //private int displayHeight;
 
-        /// <summary>
-        /// Height of display (depth space)
-        /// </summary>
-        private int displayHeight;
-
-        /// <summary>
-        /// Current status text to display
-        /// </summary>
         private string StatusText = null;
 
-        private Stream kinect32BitStream;
+        //private Stream kinect32BitStream;
         private AudioBeamFrameReader reader = null;
         AudioSource audioSource;
         private float accumulatedSquareSum;
         private int accumulatedSampleCount;
-        private byte[] packetData;
+        //private byte[] packetData;
+        
         Pitch.PitchTracker pitchTracker;
         private const int BytesPerSample = sizeof(float);
 
@@ -103,42 +56,21 @@ namespace HRI_project
         byte[] audioBuffer = null;
         float[] floatArray = null;
         
-        /// <summary>
-        /// Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
-            // on failure, set the status text
             this.StatusText = this.kinectSensor.IsAvailable ? "Kinect available" : "Kinect not available";
-                                                           // : Properties.Resources.SensorNotAvailableStatusText;
         }
        
         public HRIModel ()
         {
-            // one sensor is currently supported
             this.kinectSensor = KinectSensor.GetDefault();
-
-            // get the coordinate mapper
             this.coordinateMapper = this.kinectSensor.CoordinateMapper;
-
-            // get the depth (display) extents
             FrameDescription frameDescription = this.kinectSensor.DepthFrameSource.FrameDescription;
-
-            // get size of joint space
-            this.displayWidth = frameDescription.Width;
-            this.displayHeight = frameDescription.Height;
-
-            // open the reader for the body frames
-            this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
-
-            this.bones = createBonesList();
-            
-            // set IsAvailableChanged event notifier
             this.kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
 
-            // open the sensor
+            this.bodyFrameReader = this.kinectSensor.BodyFrameSource.OpenReader();
+            this.bones = createBonesList();
+
             this.kinectSensor.Open();
             IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
             System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
@@ -147,37 +79,35 @@ namespace HRI_project
             {
                 this.bodyFrameReader.FrameArrived += this.Sensor_SkeletonFrameReady;
             }
+            if (this.reader != null)
+            {
+                this.reader.FrameArrived += this.Reader_FrameArrived;
+            }
             
             while (true)
             {
-                if (skeletons != null)
+                if (bodies != null && bodies.FirstOrDefault() != null)
                 {
+                    Console.WriteLine(bodies);
                     Console.WriteLine(AngleXY()[0]);
                     Console.WriteLine(AngleXY()[1]);
                     Console.WriteLine(Depth());
                 }
             }
 
-            // set pitchtracker
             audioSource = this.kinectSensor.AudioSource;
             audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
             floatArray = new float[audioBuffer.Length / 4];
             this.reader = audioSource.OpenReader();
             pitchTracker = new Pitch.PitchTracker();
             pitchTracker.SampleRate = 16000.0;
-            if (this.reader != null)
-            {
-                // Subscribe to new audio frame arrived events
-                this.reader.FrameArrived += this.Reader_FrameArrived;
-            }
+           
         }
 
         private List<Tuple<JointType, JointType>> createBonesList ()
         {
-            // a bone defined as a line between two joints
             this.bones = new List<Tuple<JointType, JointType>>();
 
-            // Torso
             this.bones.Add(new Tuple<JointType, JointType>(JointType.Head, JointType.Neck));
             this.bones.Add(new Tuple<JointType, JointType>(JointType.Neck, JointType.SpineShoulder));
             this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineShoulder, JointType.SpineMid));
@@ -366,15 +296,18 @@ namespace HRI_project
             {
                 if (frame != null)
                 {
-                    this.skeletons = new Body[frame.BodyCount];
-
-                    frame.GetAndRefreshBodyData(this.skeletons);
-
-                    var skeleton = skeletons.Where(s => s.IsTracked).FirstOrDefault();
-
-                    if (skeleton != null)
+                    if (this.bodies == null)
                     {
-                        double height = Height(skeleton)[0];
+                        this.bodies = new Body[frame.BodyCount];
+                    }
+                    
+                    frame.GetAndRefreshBodyData(this.bodies);
+
+                    var body = bodies.Where(s => s.IsTracked).FirstOrDefault();
+
+                    if (body != null)
+                    {
+                        double height = Height(body)[0];
                     }
                 }
             }
@@ -630,10 +563,10 @@ namespace HRI_project
             float xAngle = 2000; 
             float yAngle = 2000;
 
-            var skeleton = skeletons.Where(s => s.IsTracked).FirstOrDefault();
-            if (skeleton != null)
+            var body = bodies.Where(s => s.IsTracked).FirstOrDefault();
+            if (body != null)
             {
-                var skeletonHead = skeleton.Joints[JointType.Head];
+                var skeletonHead = body.Joints[JointType.Head];
                 xyHeadLocation = skeletonHead.Position;
 
                 xAngle = xyHeadLocation.X;
@@ -651,10 +584,10 @@ namespace HRI_project
             CameraSpacePoint zSpineMidLocation;
             float depth = 2000;
 
-            var skeleton = skeletons.Where(s => s.IsTracked).FirstOrDefault();
-            if (skeleton != null)
+            var body = bodies.Where(s => s.IsTracked).FirstOrDefault();
+            if (body != null)
             {
-                var skeletonSpineMid = skeleton.Joints[JointType.SpineMid];
+                var skeletonSpineMid = body.Joints[JointType.SpineMid];
                 zSpineMidLocation = skeletonSpineMid.Position;
 
                 depth = zSpineMidLocation.Z;
