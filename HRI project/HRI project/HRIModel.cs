@@ -16,52 +16,63 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.FileIO;
+using Aldebaran.Proxies;
 
 namespace HRI_project
 {
     class HRIModel
     {
-        //private const double HandSize = 30;
-
-        //private const double JointThickness = 3;
-
-        //private const double ClipBoundsThickness = 10;
-
         private const float InferredZPositionClamp = 0.1f;
 
+        // Kinect Basic Setup
         private KinectSensor kinectSensor = null;
         private CoordinateMapper coordinateMapper = null;
         private BodyFrameReader bodyFrameReader = null;
+        private string StatusText = null;
 
+        // Setup NAO Variables
+        private readonly static string NAO_IP_ADDRESS = "10.0.1.5";
+        private readonly static int NAO_PORT = 9559;
+        private TextToSpeechProxy TextToSpeechProxy;
+        private BehaviorManagerProxy BehaviorManagerProxy;
+        private LedsProxy LedsProxy;
+        private MotionProxy MotionProxy;
+
+        // Setup skeleton recognition variables
         private Body[] bodies = null;
         private List<Tuple<JointType, JointType>> bones;
 
-        //private int displayWidth;
-        //private int displayHeight;
-
-        private string StatusText = null;
-
-        //private Stream kinect32BitStream;
+        // Setup Audio Access 
         private AudioBeamFrameReader reader = null;
         AudioSource audioSource;
         private float accumulatedSquareSum;
         private int accumulatedSampleCount;
-        //private byte[] packetData;
         
+        // Setup Pitch Detection
         Pitch.PitchTracker pitchTracker;
         private const int BytesPerSample = sizeof(float);
-
         private const int SamplesPerColumn = 40;
-
         byte[] audioBuffer = null;
         float[] floatArray = null;
-        
+       
+        public HRIModel ()
+        {
+            Initialize_Kinect_Parameters();
+            Initialize_Nao_Parameters();
+            
+            Setup_Skeleton_Detection();
+            Height_Gaze_Loop();
+
+            //Compute_Gaze_Angle();
+            //Detect_Pitch();
+        }
+
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
             this.StatusText = this.kinectSensor.IsAvailable ? "Kinect available" : "Kinect not available";
         }
-       
-        public HRIModel ()
+
+        private void Initialize_Kinect_Parameters()
         {
             this.kinectSensor = KinectSensor.GetDefault();
             this.coordinateMapper = this.kinectSensor.CoordinateMapper;
@@ -74,20 +85,84 @@ namespace HRI_project
             this.kinectSensor.Open();
             IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
             System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
+        }
 
-            if (this.bodyFrameReader != null)
+        private void Initialize_Nao_Parameters()
+        {
+            this.TextToSpeechProxy = new TextToSpeechProxy(NAO_IP_ADDRESS, NAO_PORT);
+            this.BehaviorManagerProxy = new BehaviorManagerProxy(NAO_IP_ADDRESS, NAO_PORT);
+            this.LedsProxy = new LedsProxy(NAO_IP_ADDRESS, NAO_PORT);
+            this.MotionProxy = new MotionProxy(NAO_IP_ADDRESS, NAO_PORT);
+
+            Console.WriteLine(this.BehaviorManagerProxy.ping());
+            Console.WriteLine(this.BehaviorManagerProxy.isBehaviorPresent("HRIDemo2015/waveFront"));
+        }
+
+        private void Setup_Skeleton_Detection()
+        {
+            while (bodies == null)
             {
-                this.bodyFrameReader.FrameArrived += this.Sensor_SkeletonFrameReady;
+                if (this.bodyFrameReader != null)
+                {
+                    this.bodyFrameReader.FrameArrived += this.Sensor_SkeletonFrameReady;
+                }
+                if (this.reader != null)
+                {
+                    this.reader.FrameArrived += this.Reader_FrameArrived;
+                }
             }
-            if (this.reader != null)
+        }
+
+        private void Height_Gaze_Loop()
+        {
+            Body body = this.bodies.FirstOrDefault();
+            Boolean distanceFar = true;
+            Boolean onlyOnce = true;
+
+            float[] coordinates = null;
+            float depth = 0;
+            double xAngle = 0;
+            double yAngle = 0;
+
+            Console.WriteLine("BOE!");
+            while (!body.IsTracked)
             {
-                this.reader.FrameArrived += this.Reader_FrameArrived;
+                asdfdsaf // body is rode skelet dus we moeten een body uit de lijst halen die niet null is, body.istracked werkt niet.
+                while (body.IsTracked && distanceFar)
+                {
+                    Console.WriteLine("I SEE PEOPLE");
+                    if (onlyOnce)
+                    {
+                        double[] height = Height(body);
+                        onlyOnce = false;
+                    }
+                    distanceFar = (Depth() >= 2.0);
+                    Console.WriteLine("Depth: " + distanceFar);
+                    if (distanceFar)
+                    {
+                        coordinates = LocationHeadXY();
+                        xAngle = CalculateXAngle(coordinates[0], depth);
+                        yAngle = CalculateYAngle(coordinates[1], depth);
+
+                        Console.WriteLine("I LIKE TO MOVE IT MOVE IT");
+                        string[] names = new string[] { "HeadYaw", "HeadPitch" };
+                        double[] angles = new double[] { xAngle, yAngle };
+                        float speed = 1f;
+                        this.MotionProxy.setStiffnesses(names, 1f);
+                        this.MotionProxy.setAngles(names, angles, speed);
+                        this.MotionProxy.setStiffnesses(names, 0f);
+                    }
+                }
             }
-            
+        }
+        
+        private void Compute_Gaze_Angle()
+        {
             while (true)
             {
                 if (bodies != null && bodies.FirstOrDefault() != null)
                 {
+
                     float[] locationHead = LocationHeadXY();
                     float depth = Depth();
 
@@ -95,14 +170,16 @@ namespace HRI_project
                     Console.WriteLine(CalculateYAngle(locationHead[1], depth));
                 }
             }
+        }
 
+        private void Detect_Pitch()
+        {
             audioSource = this.kinectSensor.AudioSource;
             audioBuffer = new byte[audioSource.SubFrameLengthInBytes];
             floatArray = new float[audioBuffer.Length / 4];
             this.reader = audioSource.OpenReader();
             pitchTracker = new Pitch.PitchTracker();
             pitchTracker.SampleRate = 16000.0;
-           
         }
 
         private List<Tuple<JointType, JointType>> createBonesList ()
@@ -227,8 +304,6 @@ namespace HRI_project
             var handRight = skeleton.Joints[JointType.HandRight];
             var handTipLeft = skeleton.Joints[JointType.HandTipLeft];
             var handTipRight = skeleton.Joints[JointType.HandTipRight];
-
-
 
             // Find which leg is tracked more accurately.
             int legLeftTrackedJoints =
