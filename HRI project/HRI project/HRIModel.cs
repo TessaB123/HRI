@@ -37,10 +37,16 @@ namespace HRI_project
         private BehaviorManagerProxy BehaviorManagerProxy;
         private LedsProxy LedsProxy;
         private MotionProxy MotionProxy;
+        private MemoryProxy MemoryProxy;
 
         // Setup skeleton recognition variables
         private Body[] bodies = null;
         private List<Tuple<JointType, JointType>> bones;
+        private Body oneBody = null;
+        private float bodyID = 0;
+
+
+        private Boolean inConversation = false;
 
         // Setup Audio Access 
         private AudioBeamFrameReader reader = null;
@@ -54,16 +60,18 @@ namespace HRI_project
         private const int SamplesPerColumn = 40;
         byte[] audioBuffer = null;
         float[] floatArray = null;
-       
+
+        private Boolean done1 = false;
+        private Boolean done2 = false;
+        private Boolean onlyOnce2 = false;
+
         public HRIModel ()
         {
             Initialize_Kinect_Parameters();
             Initialize_Nao_Parameters();
             
             Setup_Skeleton_Detection();
-            Height_Gaze_Loop();
-
-            //Compute_Gaze_Angle();
+           
             //Detect_Pitch();
         }
 
@@ -85,6 +93,7 @@ namespace HRI_project
             this.kinectSensor.Open();
             IReadOnlyList<AudioBeam> audioBeamList = this.kinectSensor.AudioSource.AudioBeams;
             System.IO.Stream audioStream = audioBeamList[0].OpenInputStream();
+            done1 = true;
         }
 
         private void Initialize_Nao_Parameters()
@@ -93,84 +102,110 @@ namespace HRI_project
             this.BehaviorManagerProxy = new BehaviorManagerProxy(NAO_IP_ADDRESS, NAO_PORT);
             this.LedsProxy = new LedsProxy(NAO_IP_ADDRESS, NAO_PORT);
             this.MotionProxy = new MotionProxy(NAO_IP_ADDRESS, NAO_PORT);
+            this.MemoryProxy = new MemoryProxy(NAO_IP_ADDRESS, NAO_PORT);
 
-            Console.WriteLine(this.BehaviorManagerProxy.ping());
-            Console.WriteLine(this.BehaviorManagerProxy.isBehaviorPresent("HRIDemo2015/waveFront"));
         }
 
         private void Setup_Skeleton_Detection()
         {
-            while (bodies == null)
+
+         //   while (oneBody==null || !oneBody.IsTracked)
             {
+
                 if (this.bodyFrameReader != null)
                 {
-                    this.bodyFrameReader.FrameArrived += this.Sensor_SkeletonFrameReady;
+                    this.bodyFrameReader.FrameArrived += this.Reader_FrameArrived;
                 }
                 if (this.reader != null)
                 {
-                    this.reader.FrameArrived += this.Reader_FrameArrived;
+               //     this.reader.FrameArrived += this.Reader_FrameArrived;
+                }
+            }
+        }
+
+        private void getBody()
+        {
+            if (this.bodies != null)
+            {
+
+                for (int i = 0; i < this.bodies.Length;i++ )
+                {
+                    Body b = bodies[i];
+                    if ( b.IsTracked && (bodyID == 0 || b.TrackingId == bodyID))
+                    {
+                        oneBody = b;
+                        bodyID = b.TrackingId;
+                    }
                 }
             }
         }
 
         private void Height_Gaze_Loop()
         {
-            Body body = this.bodies.FirstOrDefault();
-            Boolean distanceFar = true;
+            Body body = oneBody;
             Boolean onlyOnce = true;
 
             float[] coordinates = null;
-            float depth = 0;
-            double xAngle = 0;
-            double yAngle = 0;
+            float xAngle = 0;
+            float yAngle = 0;
 
-            Console.WriteLine("BOE!");
-            while (!body.IsTracked)
+            if (body.IsTracked && Depth() >= 2.0)
             {
-                asdfdsaf // body is rode skelet dus we moeten een body uit de lijst halen die niet null is, body.istracked werkt niet.
-                while (body.IsTracked && distanceFar)
+                if (onlyOnce)
                 {
-                    Console.WriteLine("I SEE PEOPLE");
-                    if (onlyOnce)
-                    {
-                        double[] height = Height(body);
-                        onlyOnce = false;
-                    }
-                    distanceFar = (Depth() >= 2.0);
-                    Console.WriteLine("Depth: " + distanceFar);
-                    if (distanceFar)
-                    {
-                        coordinates = LocationHeadXY();
-                        xAngle = CalculateXAngle(coordinates[0], depth);
-                        yAngle = CalculateYAngle(coordinates[1], depth);
-
-                        Console.WriteLine("I LIKE TO MOVE IT MOVE IT");
-                        string[] names = new string[] { "HeadYaw", "HeadPitch" };
-                        double[] angles = new double[] { xAngle, yAngle };
-                        float speed = 1f;
-                        this.MotionProxy.setStiffnesses(names, 1f);
-                        this.MotionProxy.setAngles(names, angles, speed);
-                        this.MotionProxy.setStiffnesses(names, 0f);
-                    }
+                    double[] height = Height(body);
+                    this.MemoryProxy.insertData("personHeight", 180f);
+                    onlyOnce = false;
                 }
+                 
+                if (Depth() >= 2.0)
+                {
+                    coordinates = LocationHeadXY();
+                    xAngle = CalculateXAngle(coordinates[0], Depth());
+                    yAngle = CalculateYAngle(coordinates[1], Depth());
+
+                    string[] names = new string[] { "HeadYaw", "HeadPitch" };
+                    float[] angles = new float[] { xAngle, yAngle };
+                    if(!onlyOnce2)
+                    {
+                        Console.WriteLine("Only once");
+                        if (xAngle <= -0.3)
+                        {
+                            Console.WriteLine("RightWave");
+                            this.MotionProxy.wakeUp();
+                            this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/waveRight");
+                        }
+                        else if (xAngle >= 0.3)
+                        {
+                            Console.WriteLine("LeftWave");
+                            this.MotionProxy.wakeUp();
+                            this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/waveLeft");
+                        }
+                        else
+                        {
+                            Console.WriteLine("FrontWave");
+                            this.MotionProxy.wakeUp();
+                            this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/waveFront");
+                        }
+                        this.MotionProxy.rest();
+                            
+                        onlyOnce2 = true;
+                    }
+
+                    float speed = 1f;
+                    this.MotionProxy.setStiffnesses(names, 0.08f);
+                    this.MotionProxy.setAngles(names, angles, speed);
+                    this.MotionProxy.setStiffnesses(names, 0f);
+                }
+
             }
+               
+            
+           // while (!body.IsTracked);
+            
         }
         
-        private void Compute_Gaze_Angle()
-        {
-            while (true)
-            {
-                if (bodies != null && bodies.FirstOrDefault() != null)
-                {
-
-                    float[] locationHead = LocationHeadXY();
-                    float depth = Depth();
-
-                    Console.WriteLine(CalculateXAngle(locationHead[0], depth));
-                    Console.WriteLine(CalculateYAngle(locationHead[1], depth));
-                }
-            }
-        }
+      
 
         private void Detect_Pitch()
         {
@@ -222,61 +257,61 @@ namespace HRI_project
             return bones;
         }
         
-        private void Reader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
-        {
-            AudioBeamFrameReference frameReference = e.FrameReference;
-            AudioBeamFrameList frameList = frameReference.AcquireBeamFrames();
+        //private void Reader_FrameArrived(object sender, AudioBeamFrameArrivedEventArgs e)
+        //{
+        //    AudioBeamFrameReference frameReference = e.FrameReference;
+        //    AudioBeamFrameList frameList = frameReference.AcquireBeamFrames();
 
-            if (frameList != null)
-            {
-                // AudioBeamFrameList is IDisposable
-                using (frameList)
-                {
-                    // Only one audio beam is supported. Get the sub frame list for this beam
-                    IReadOnlyList<AudioBeamSubFrame> subFrameList = frameList[0].SubFrames;
+        //    if (frameList != null)
+        //    {
+        //        // AudioBeamFrameList is IDisposable
+        //        using (frameList)
+        //        {
+        //            // Only one audio beam is supported. Get the sub frame list for this beam
+        //            IReadOnlyList<AudioBeamSubFrame> subFrameList = frameList[0].SubFrames;
 
-                    // Loop over all sub frames, extract audio buffer and beam information
-                    foreach (AudioBeamSubFrame subFrame in subFrameList)
-                    {
-                        // Process audio buffer
-                        subFrame.CopyFrameDataToArray(this.audioBuffer);
+        //            // Loop over all sub frames, extract audio buffer and beam information
+        //            foreach (AudioBeamSubFrame subFrame in subFrameList)
+        //            {
+        //                // Process audio buffer
+        //                subFrame.CopyFrameDataToArray(this.audioBuffer);
 
-                        Buffer.BlockCopy(this.audioBuffer, 0, this.floatArray, 0, this.audioBuffer.Length);
-                        this.pitchTracker.ProcessBuffer(this.floatArray);
-                        Console.WriteLine(subFrame.BeamAngle * 180.0f / (float)Math.PI);
-                        IReadOnlyList<AudioBodyCorrelation> asdf = subFrame.AudioBodyCorrelations;
-                        //  Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
-                        //  Console.WriteLine("     Hoi");
+        //                Buffer.BlockCopy(this.audioBuffer, 0, this.floatArray, 0, this.audioBuffer.Length);
+        //                this.pitchTracker.ProcessBuffer(this.floatArray);
+        //                Console.WriteLine(subFrame.BeamAngle * 180.0f / (float)Math.PI);
+        //                IReadOnlyList<AudioBodyCorrelation> asdf = subFrame.AudioBodyCorrelations;
+        //                //  Console.WriteLine("     " + this.pitchTracker.CurrentPitchRecord.Pitch);
+        //                //  Console.WriteLine("     Hoi");
 
-                        for (int i = 0; i < this.audioBuffer.Length; i += BytesPerSample)
-                        {
-                            // Extract the 32-bit IEEE float sample from the byte array
-                            float audioSample = BitConverter.ToSingle(this.audioBuffer, i);
+        //                for (int i = 0; i < this.audioBuffer.Length; i += BytesPerSample)
+        //                {
+        //                    // Extract the 32-bit IEEE float sample from the byte array
+        //                    float audioSample = BitConverter.ToSingle(this.audioBuffer, i);
 
-                            this.accumulatedSquareSum += audioSample * audioSample;
-                            ++this.accumulatedSampleCount;
+        //                    this.accumulatedSquareSum += audioSample * audioSample;
+        //                    ++this.accumulatedSampleCount;
 
-                            if (this.accumulatedSampleCount < SamplesPerColumn)
-                            {
-                                continue;
-                            }
+        //                    if (this.accumulatedSampleCount < SamplesPerColumn)
+        //                    {
+        //                        continue;
+        //                    }
 
-                            float meanSquare = this.accumulatedSquareSum / SamplesPerColumn;
+        //                    float meanSquare = this.accumulatedSquareSum / SamplesPerColumn;
 
-                            if (meanSquare > 1.0f)
-                            {
-                                // A loud audio source right next to the sensor may result in mean square values
-                                // greater than 1.0. Cap it at 1.0f for display purposes.
-                                meanSquare = 1.0f;
-                            }
+        //                    if (meanSquare > 1.0f)
+        //                    {
+        //                        // A loud audio source right next to the sensor may result in mean square values
+        //                        // greater than 1.0. Cap it at 1.0f for display purposes.
+        //                        meanSquare = 1.0f;
+        //                    }
 
-                            this.accumulatedSquareSum = 0;
-                            this.accumulatedSampleCount = 0;
-                        }
-                    }
-                }
-            }
-        }
+        //                    this.accumulatedSquareSum = 0;
+        //                    this.accumulatedSampleCount = 0;
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
        
         public static double[] Height(Body skeleton)
         {
@@ -325,7 +360,7 @@ namespace HRI_project
                 : Length(shoulderRight, elbowRight, wristRight, handRight, handTipRight);
 
             double[] buh = { Length(head, neck, spine, waist) + legLength + HEAD_DIVERGENCE, legLength, armLength, shoulderWidth, torso };
-
+            
             return buh;
         }
        
@@ -366,83 +401,110 @@ namespace HRI_project
             return length;
         }
 
-        void Sensor_SkeletonFrameReady(object sender, BodyFrameArrivedEventArgs e)
+        void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
+            //Console.WriteLine("ik kom hier");
+            bool dataReceived = false;
             using (var frame = e.FrameReference.AcquireFrame())
             {
                 if (frame != null)
                 {
-                    if (this.bodies == null)
+                  //  if (this.bodies == null)
                     {
                         this.bodies = new Body[frame.BodyCount];
                     }
                     
                     frame.GetAndRefreshBodyData(this.bodies);
-
+                    dataReceived = true;
                     var body = bodies.Where(s => s.IsTracked).FirstOrDefault();
 
                     if (body != null)
                     {
+                       // Console.WriteLine("body is niet null");
+                        getBody();
+                        oneBody = body;
                         double height = Height(body)[0];
+                        if(Depth() > 2.0 && !this.inConversation)
+                        {
+                            Height_Gaze_Loop();
+                        }
+                        else
+                        {
+                            this.inConversation = true;
+                            this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/conversation");
+
+                        }
+
                     }
+                }
+            }
+            var b = bodies.Where(s => s.IsTracked).FirstOrDefault();
+            if (dataReceived)
+            {
+                if (b != null)
+                {
+                    getBody();
+                    oneBody = b;
+                    double height = Height(b)[0];
+                    Height_Gaze_Loop();
                 }
             }
         }
 
-        private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
-        {
-            // csv writer
-            //var csvw = new StreamWriter("CSV.csv");
-            // csv reader
-            // var csv = new StreamReader("CSV.csv");
+        //private void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
+        //{
+        //    // csv writer
+        //    //var csvw = new StreamWriter("CSV.csv");
+        //    // csv reader
+        //    // var csv = new StreamReader("CSV.csv");
 
-            bool dataReceived = false;
+        //    bool dataReceived = false;
 
-            using (BodyFrame bodyFrame = e.FrameReference.AcquireFrame())
-            {
-                if (bodyFrame != null)
-                {
-                    if (this.bodies == null)
-                    {
-                        this.bodies = new Body[bodyFrame.BodyCount];
-                    }
+        //    using (BodyFrame bodyFrame = e.FrameReference.AcquireFrame())
+        //    {
+        //        if (bodyFrame != null)
+        //        {
+        //            if (this.bodies == null)
+        //            {
+        //                this.bodies = new Body[bodyFrame.BodyCount];
+        //            }
 
-                    // The first time GetAndRefreshBodyData is called, Kinect will allocate each Body in the array.
-                    // As long as those body objects are not disposed and not set to null in the array,
-                    // those body objects will be re-used.
-                    bodyFrame.GetAndRefreshBodyData(this.bodies);
-                    dataReceived = true;
-                }
-            }
+        //            // The first time GetAndRefreshBodyData is called, Kinect will allocate each Body in the array.
+        //            // As long as those body objects are not disposed and not set to null in the array,
+        //            // those body objects will be re-used.
+        //            bodyFrame.GetAndRefreshBodyData(this.bodies);
+        //            dataReceived = true;
+        //        }
+        //    }
 
-            if (dataReceived)
-            {
-                    foreach (Body body in this.bodies)
-                    {
-                        if (body.IsTracked)
-                        {
-                            IReadOnlyDictionary<JointType, Joint> joints = body.Joints;
+        //    if (dataReceived)
+        //    {
+        //            foreach (Body body in this.bodies)
+        //            {
+        //                if (body.IsTracked)
+        //                {
+        //                    IReadOnlyDictionary<JointType, Joint> joints = body.Joints;
 
-                            // convert the joint points to depth (display) space
-                            Dictionary<JointType, Point> jointPoints = new Dictionary<JointType, Point>();
+        //                    // convert the joint points to depth (display) space
+        //                    Dictionary<JointType, Point> jointPoints = new Dictionary<JointType, Point>();
 
-                            foreach (JointType jointType in joints.Keys)
-                            {
-                                // sometimes the depth(Z) of an inferred joint may show as negative
-                                // clamp down to 0.1f to prevent coordinatemapper from returning (-Infinity, -Infinity)
-                                CameraSpacePoint position = joints[jointType].Position;
-                                if (position.Z < 0)
-                                {
-                                    position.Z = InferredZPositionClamp;
-                                }
+        //                    foreach (JointType jointType in joints.Keys)
+        //                    {
+        //                        // sometimes the depth(Z) of an inferred joint may show as negative
+        //                        // clamp down to 0.1f to prevent coordinatemapper from returning (-Infinity, -Infinity)
+        //                        CameraSpacePoint position = joints[jointType].Position;
+        //                        if (position.Z < 0)
+        //                        {
+        //                            position.Z = InferredZPositionClamp;
+        //                        }
 
-                                DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
-                                jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
-                            }
-                        }
-                    }
-                }
-            }
+        //                        DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
+        //                        jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
     
         private void OutputMeasures(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, double[] bodym, Body body)
         {
@@ -672,22 +734,22 @@ namespace HRI_project
             return depth;
         }
 
-        private double CalculateYAngle(float yHead, float depth)
+        private float CalculateYAngle(float yHead, float depth)
         {
             float yAngle = yHead / depth;
          
             double yTan = Math.Tan(yAngle);
 
-            return yTan;
+            return (float)yTan;
         }
 
-        private double CalculateXAngle(float xHead, float depth)
+        private float CalculateXAngle(float xHead, float depth)
         {
             float xAngle = xHead / depth;
 
             double xTan = Math.Tan(xAngle);
 
-            return xTan;
+            return (float)xTan;
         }
     }
 }
