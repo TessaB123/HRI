@@ -32,6 +32,10 @@ namespace HRI_project
         {
             HRIModel m = new HRIModel();
             HRIController c = new HRIController (m);
+            while (true)
+            {
+
+            }
         }
     }
 }

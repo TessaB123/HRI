@@ -12,6 +12,7 @@ using Microsoft.Kinect;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.VisualBasic;
@@ -65,13 +66,16 @@ namespace HRI_project
         private Boolean done2 = false;
         private Boolean onlyOnce2 = false;
 
+        private System.Timers.Timer aTimer;
+        private Boolean timeFrame = false;
+
         public HRIModel ()
         {
             Initialize_Kinect_Parameters();
             Initialize_Nao_Parameters();
             
             Setup_Skeleton_Detection();
-           
+
             //Detect_Pitch();
         }
 
@@ -140,6 +144,11 @@ namespace HRI_project
             }
         }
 
+        private void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            timeFrame = true;
+        }
+
         private void Height_Gaze_Loop()
         {
             Body body = oneBody;
@@ -154,7 +163,8 @@ namespace HRI_project
                 if (onlyOnce)
                 {
                     double[] height = Height(body);
-                    this.MemoryProxy.insertData("personHeight", 180f);
+  
+                    this.MemoryProxy.insertData("personHeight", ((int)Math.Round(height[0]*100)).ToString());
                     onlyOnce = false;
                 }
                  
@@ -163,36 +173,60 @@ namespace HRI_project
                     coordinates = LocationHeadXY();
                     xAngle = CalculateXAngle(coordinates[0], Depth());
                     yAngle = CalculateYAngle(coordinates[1], Depth());
-
+                    aTimer = new System.Timers.Timer(4000);
+                    aTimer.Elapsed += OnTimedEvent;
                     string[] names = new string[] { "HeadYaw", "HeadPitch" };
+                    string[] arms = new string[] { "LShoulderRoll", "RShoulderRoll", "LElbowRoll", "RElbowRoll", "LWristYaw", "RWristYaw", "LElbowYaw", "RElbowYaw", "LShoulderPitch", "RShoulderPitch"};
                     float[] angles = new float[] { xAngle, yAngle };
+                    float speed;
+                    this.MotionProxy.setStiffnesses("Body", 1f);
+                            
                     if(!onlyOnce2)
                     {
                         Console.WriteLine("Only once");
                         if (xAngle <= -0.3)
                         {
                             Console.WriteLine("RightWave");
-                            this.MotionProxy.wakeUp();
+                            Console.WriteLine(this.BehaviorManagerProxy.isBehaviorPresent("HRIDemo2015/waveRight"));
+                            this.MotionProxy.setStiffnesses(arms,0.5f);
                             this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/waveRight");
+                            
                         }
                         else if (xAngle >= 0.3)
                         {
                             Console.WriteLine("LeftWave");
-                            this.MotionProxy.wakeUp();
+                            Console.WriteLine(this.BehaviorManagerProxy.isBehaviorPresent("HRIDemo2015/waveLeft"));
+                            this.MotionProxy.setStiffnesses(arms, 0.5f);
                             this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/waveLeft");
                         }
                         else
                         {
                             Console.WriteLine("FrontWave");
-                            this.MotionProxy.wakeUp();
+                            Console.WriteLine(this.BehaviorManagerProxy.isBehaviorPresent("HRIDemo2015/waveFront"));
+                            this.MotionProxy.setStiffnesses(arms, 0.5f);
                             this.BehaviorManagerProxy.post.runBehavior("HRIDemo2015/waveFront");
                         }
-                        this.MotionProxy.rest();
-                            
+                        Console.WriteLine("before sleep");
+                        //Console.WriteLine(this.BehaviorManagerProxy.getRunningBehaviors()[0]);//"HRIDemo2015/waveFront"));
+                        aTimer.Enabled = true;
+                        while(!timeFrame)
+                        {
+                            coordinates = LocationHeadXY();
+                            xAngle = CalculateXAngle(coordinates[0], Depth());
+                            yAngle = CalculateYAngle(coordinates[1], Depth());
+                            speed = 1f;
+                            this.MotionProxy.setStiffnesses(names, 0.08f);
+                            this.MotionProxy.setAngles(names, angles, speed);
+                            this.MotionProxy.setStiffnesses(names, 0f);
+                            Console.WriteLine("in timeframe");
+                        }
+                       // System.Threading.Thread.Sleep(6000);
+
+                        this.MotionProxy.setStiffnesses(arms, 0f);
                         onlyOnce2 = true;
                     }
 
-                    float speed = 1f;
+                    speed= 1f;
                     this.MotionProxy.setStiffnesses(names, 0.08f);
                     this.MotionProxy.setAngles(names, angles, speed);
                     this.MotionProxy.setStiffnesses(names, 0f);
